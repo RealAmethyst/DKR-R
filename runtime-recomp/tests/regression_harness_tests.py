@@ -420,6 +420,7 @@ print('STATE=stable')
             code = ('import subprocess, sys; '
                     f'p=subprocess.Popen([sys.executable, "-c", {descendant!r}]); p.wait()')
             with mock.patch.object(regression.time, 'perf_counter', side_effect=controlled_counter), \
+                 mock.patch.object(regression, 'stop_process', wraps=regression.stop_process) as cleanup, \
                  concurrent.futures.ThreadPoolExecutor(max_workers=1) as pool:
                 future = pool.submit(regression.execute, [sys.executable, '-c', code],
                                      self.root, os.environ.copy(), 30,
@@ -431,6 +432,7 @@ print('STATE=stable')
                         self.assertEqual(connection.recv(5, socket.MSG_WAITALL), b'ready')
                         expired.set()
                         result = future.result(timeout=10)
+                        self.assertEqual(cleanup.call_count, 1)
                         self.assertIn('Timed out', result[2] or '', repr(result))
                         self.assertNotEqual(result[0], 0, repr(result))
                         self.assertEqual(connection.recv(1), b'', 'Descendant still holds its socket open')

@@ -152,6 +152,7 @@ def execute(command, cwd, env, timeout, stdout, stderr):
     started = time.perf_counter()
     error = None
     interrupted = False
+    stopped = False
     with stdout.open('wb') as out, stderr.open('wb') as err:
         try:
             process = subprocess.Popen(command, cwd=cwd, env=env, stdout=out, stderr=err,
@@ -160,7 +161,7 @@ def execute(command, cwd, env, timeout, stdout, stderr):
             return None, 0.0, f'Could not launch: {failure}', False
         finished = threading.Event()
         def watchdog():
-            nonlocal error
+            nonlocal error, stopped
             while not finished.wait(0.02):
                 if process.poll() is not None:
                     return
@@ -170,6 +171,7 @@ def execute(command, cwd, env, timeout, stdout, stderr):
                     error = 'Output exceeded the 32 MiB per-attempt limit'
                 if error:
                     stop_process(process)
+                    stopped = True
                     return
         watcher = threading.Thread(target=watchdog, daemon=True)
         watcher.start()
@@ -183,8 +185,11 @@ def execute(command, cwd, env, timeout, stdout, stderr):
             elapsed = (time.perf_counter() - started) * 1000
             finished.set()
             # Also retire lingering descendants after a normal parent exit on POSIX.
-            stop_process(process)
+            # Join before final cleanup: the watchdog may already have killed
+            # this group, and a second SIGKILL can hit macOS zombies.
             watcher.join()
+            if not stopped:
+                stop_process(process)
     # The watchdog may not be scheduled before a late child exit. Enforce the
     # observed deadline independently of its polling cadence, without adding
     # polling latency to successful process measurements.

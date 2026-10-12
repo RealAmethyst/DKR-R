@@ -65,9 +65,10 @@ include(cmake/ProjectTests.cmake)
 
 
 include(cmake/SourceRoots.cmake)
-include(cmake/RegressionHarness.cmake)
 option(DKR_RUNTIME_BUILD_GENERATED "Compile N64Recomp-generated DKR CPU functions" ON)
 option(DKR_RUNTIME_BUILD_RT64 "Also configure and compile the pinned RT64 renderer" OFF)
+include(cmake/HostSanitizers.cmake)
+include(cmake/RegressionHarness.cmake)
 option(DKR_LEGACY_QUALIFICATION "Build private real-runtime legacy scene qualification hooks (not for packaging)" OFF)
 option(DKR_REPLAY_QUALIFICATION "Private real-game replay fixtures; never package" OFF)
 option(DKR_EXPERIMENTAL_RENDER_QUALIFICATION "PRIVATE generation-retirement GPU probe; never package" OFF)
@@ -1343,6 +1344,13 @@ if(BUILD_TESTING)
     # Build tooling: dependency patch pipeline, reviewed-ELF digest and the
     # shell entry-point contracts. Needs only git and Python, so it runs in
     # every configuration including the policy-only CI builds.
+    if(DKR_NETPLAY_WEBRTC)
+        add_executable(DKRPicoHashCallbackTests tests/picohash_callback_tests.c)
+        target_include_directories(DKRPicoHashCallbackTests PRIVATE
+            "${DKR_LIBDATACHANNEL_SOURCE}/deps/libjuice/src")
+        add_test(NAME DKRPicoHashCallbacks COMMAND DKRPicoHashCallbackTests)
+    endif()
+
     foreach(tooling_test IN ITEMS
             "DKRBuildTooling|build_tooling_tests.py"
             "DKRHostTaskPolicy|host_task_policy_tests.py"
@@ -1355,7 +1363,8 @@ if(BUILD_TESTING)
             "DKRRegressionHarness|regression_harness_tests.py"
             "DKRHarnessReports|harness_report_tests.py"
             "DKRReplayCapture|replay_capture_tests.py"
-            "DKRCiSummary|ci_summary_tests.py")
+            "DKRCiSummary|ci_summary_tests.py"
+            "DKRStressRunner|stress_runner_tests.py")
         string(REPLACE "|" ";" tooling_test "${tooling_test}")
         list(GET tooling_test 0 test_name)
         list(GET tooling_test 1 test_script)

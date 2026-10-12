@@ -66,6 +66,14 @@
       "purpose": "MPL-2.0 WebRTC data channels and WebSocket signaling for optional Quick Join transport"
     },
     {
+      "name": "libjuice",
+      "repository": "https://github.com/paullouisageneau/libjuice.git",
+      "commit": "22145ec3473c73d811417ac9a6aee0de530aaa3f",
+      "destination": "extern/libdatachannel/deps/libjuice",
+      "managedBy": "libdatachannel git submodule",
+      "purpose": "ICE/STUN transport used by libdatachannel; type-correct picohash callbacks preserve hashing without undefined function calls"
+    },
+    {
       "name": "usrsctp",
       "repository": "https://github.com/paullouisageneau/usrsctp.git",
       "commit": "fec583d54493f879d2ae44a743423bf8a04371ab",

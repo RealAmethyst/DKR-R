@@ -20,6 +20,7 @@ TOOLING_TESTS = (
     "harness_report_tests.py",
     "replay_capture_tests.py",
     "ci_summary_tests.py",
+    "stress_runner_tests.py",
 )
 
 

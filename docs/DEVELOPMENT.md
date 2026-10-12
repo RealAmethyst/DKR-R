@@ -50,7 +50,9 @@ JUnit results are retained on successful and failed runs. Workflows run for
 pull requests and pushes to `main`, avoiding duplicate branch/PR builds. Use
 **Run workflow** for a branch without a pull request.
 
-Pinned dependency sources are cached by operating system, dependency profile,
+Pinned dependency sources use shallow checkouts of the exact locked revisions,
+including submodules, to keep CI archives small. They are cached by operating
+system, architecture, dependency profile,
 lockfile, reviewed patches, and preparation scripts. Every cache hit still
 passes checkout and patch validation. The cache is saved before configuration
 and excludes build outputs, ROMs, and generated retail payloads.
@@ -96,6 +98,10 @@ compiles production platform adapters and patched SDL2 against the arm64
 iPhoneOS SDK without ROMs; it does not link or run the complete app. The
 [Android compilation check](ANDROID-CI.md) compiles production platform sources
 with the Android NDK; it does not package or run the complete app.
+
+For ASan/UBSan builds and seeded session/network repetitions, follow
+[Nightly checks](NIGHTLY-CHECKS.md). The same commands run locally and in the
+nightly workflows, with seeds and first-failure evidence retained.
 
 For repeated regression runs and performance comparisons, use the
 [regression harness](REGRESSION.md). From the repository root,

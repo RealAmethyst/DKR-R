@@ -358,6 +358,28 @@ class BootstrapPatchTests(PatchFixture, unittest.TestCase):
         self.assertEqual((self.root / "fresh" / "a.txt").read_text(), "one\ntwo\nthree\n")
         self.assertEqual(git(self.root / "fresh", "rev-parse", "HEAD"), self.commit)
 
+    def test_shallow_bootstrap_pins_old_revision_and_preserves_reviewed_edits(self):
+        self.entry["destination"] = "fresh"
+        with patch.object(bootstrap, "ROOT", self.root):
+            bootstrap.prepare_dependency(self.entry, False, shallow=True)
+        checkout = self.root / "fresh"
+        self.assertEqual(git(checkout, "rev-parse", "HEAD"), self.commit)
+        self.assertEqual(git(checkout, "rev-parse", "--is-shallow-repository"), "true")
+        self.assertEqual(git(checkout, "rev-list", "--count", "HEAD"), "1")
+        manifest = json.loads(self.manifest.read_text())
+        manifest["dependencies"][0]["repositoryPath"] = "fresh"
+        self.manifest.write_text(json.dumps(manifest))
+        self.apply()
+        with patch.object(bootstrap, "ROOT", self.root), patch.object(bootstrap, "run", wraps=bootstrap.run) as commands:
+            bootstrap.prepare_dependency(self.entry, False, shallow=True)
+        self.assertFalse(any(call.args[0][1] in ("fetch", "checkout", "reset", "clean")
+                             for call in commands.call_args_list))
+        self.assertEqual((checkout / "a.txt").read_text(), self.final_a)
+        write(checkout / "a.txt", "developer work\n")
+        with patch.object(bootstrap, "ROOT", self.root), self.assertRaisesRegex(RuntimeError, "contains local changes"):
+            bootstrap.prepare_dependency(self.entry, False, shallow=True)
+        self.assertEqual((checkout / "a.txt").read_text(), "developer work\n")
+
     def test_bootstrap_rejects_incomplete_patch_stack(self):
         git(self.repo, "apply", str(self.patches[0]))
         with self.assertRaisesRegex(RuntimeError, "contains local changes"):

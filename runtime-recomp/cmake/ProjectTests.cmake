@@ -25,6 +25,12 @@ cmake_language(DEFER CALL dkr_configure_test_assertions)
 # timing contracts on concurrency tests and longer tooling fixtures.
 function(dkr_configure_test_metadata)
     get_property(project_tests DIRECTORY PROPERTY TESTS)
+    # Optional SDK-backed tests are labeled only when configured.
+    set(flake_tests
+        DKRDirectSession DKRFriendService DKRFriendDelivery
+        DKRFriendLocalIntegration DKRQuickJoinTransport DKRQuickJoinLifecycle
+        DKRExperimentalQuickJoin DKRExperimentalSession DKRExperimentalNetwork
+        DKRExperimentalLaunch DKRNetplayAdverseNetwork)
     foreach(test_name IN LISTS project_tests)
         if(NOT test_name MATCHES "^DKR")
             continue()
@@ -40,6 +46,9 @@ function(dkr_configure_test_metadata)
             else()
                 set_tests_properties("${test_name}" PROPERTIES LABELS "host;runtime")
             endif()
+        endif()
+        if(test_name IN_LIST flake_tests)
+            set_property(TEST "${test_name}" APPEND PROPERTY LABELS flake)
         endif()
     endforeach()
 endfunction()

@@ -82,7 +82,7 @@ def parent_entry(entry: dict[str, Any], entries: list[dict[str, Any]]) -> dict[s
 
 
 def prepare_dependency(entry: dict[str, Any], force: bool,
-                       parent: dict[str, Any] | None = None) -> dict[str, str]:
+                       parent: dict[str, Any] | None = None, shallow: bool = False) -> dict[str, str]:
     destination = ROOT / entry["destination"]
     repository = entry["repository"]
     commit = entry["commit"]
@@ -98,7 +98,7 @@ def prepare_dependency(entry: dict[str, Any], force: bool,
         if len(fields) < 3 or fields[0] != "160000" or fields[2].lower() != commit.lower():
             raise RuntimeError(f"Parent submodule pin does not match lock for {entry['name']}")
         if not (destination / ".git").exists():
-            run(["git", "submodule", "update", "--init", "--recursive", "--", relative], cwd=parent_path)
+            run(["git", "submodule", "update", "--init", "--recursive", *(["--depth", "1"] if shallow else []), "--", relative], cwd=parent_path)
         if run(["git", "rev-parse", "HEAD"], cwd=destination, capture=True).lower() != commit.lower():
             raise RuntimeError(f"{entry['name']} submodule is at another revision; restore its locked parent pin first")
 
@@ -110,7 +110,12 @@ def prepare_dependency(entry: dict[str, Any], force: bool,
     cloned = not destination.exists()
     if cloned:
         destination.parent.mkdir(parents=True, exist_ok=True)
-        run(["git", "clone", "--filter=blob:none", "--no-checkout", repository, str(destination)])
+        if shallow:
+            # Fetch only the lockfile revision, not a default branch or history.
+            run(["git", "init", str(destination)])
+            run(["git", "remote", "add", "origin", repository], cwd=destination)
+        else:
+            run(["git", "clone", "--filter=blob:none", "--no-checkout", repository, str(destination)])
     else:
         current_remote = run(["git", "remote", "get-url", "origin"], cwd=destination, capture=True)
         if current_remote.rstrip("/").removesuffix(".git").lower() != repository.rstrip("/").removesuffix(".git").lower():
@@ -137,10 +142,10 @@ def prepare_dependency(entry: dict[str, Any], force: bool,
     # reviewed patches. Avoid checkout/fetch churn and support offline reruns.
     current = "" if cloned else run(["git", "rev-parse", "HEAD"], cwd=destination, capture=True)
     if cloned or current.lower() != commit.lower():
-        run(["git", "fetch", "--no-tags", "origin", commit], cwd=destination)
+        run(["git", "fetch", "--no-tags", *(["--depth", "1"] if shallow else []), "origin", commit], cwd=destination)
         run(["git", "checkout", "--detach", commit], cwd=destination)
     if recursive:
-        run(["git", "submodule", "update", "--init", "--recursive"], cwd=destination)
+        run(["git", "submodule", "update", "--init", "--recursive", *(["--depth", "1"] if shallow else [])], cwd=destination)
 
     resolved = run(["git", "rev-parse", "HEAD"], cwd=destination, capture=True)
     if resolved.lower() != commit.lower():
@@ -152,6 +157,7 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--only", action="append", help="Prepare this dependency and its required parents (repeatable).")
     parser.add_argument("--force", action="store_true", help="Discard local changes in selected checkouts; dirty nested submodules must be handled explicitly first.")
+    parser.add_argument("--shallow", action="store_true", help="Fetch only pinned revisions and shallow submodules for compact CI source caches.")
     args = parser.parse_args()
 
     ensure_tool("git")
@@ -159,7 +165,7 @@ def main() -> int:
     selected = set(args.only or [])
     entries = select_entries(lock["dependencies"], selected)
     resolved = [prepare_dependency(entry, args.force,
-                                   parent_entry(entry, lock["dependencies"]) if entry.get("managedBy") else None)
+                                   parent_entry(entry, lock["dependencies"]) if entry.get("managedBy") else None, shallow=args.shallow)
                 for entry in entries]
     previous = json.loads(RESOLVED_FILE.read_text(encoding="utf-8")) if RESOLVED_FILE.exists() else {}
     records = {entry["name"]: entry for entry in previous.get("dependencies", [])}
