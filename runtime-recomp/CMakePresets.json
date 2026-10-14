@@ -53,6 +53,15 @@
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Debug"
       }
+    },
+    {
+      "name": "host-sanitizers",
+      "displayName": "ROM-free host tests with ASan and UBSan",
+      "inherits": "host",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "RelWithDebInfo",
+        "DKR_HOST_SANITIZERS": "ON"
+      }
     }
   ],
   "buildPresets": [
@@ -75,6 +84,11 @@
       "name": "host-windows-debug",
       "configurePreset": "host-windows-debug",
       "configuration": "Debug"
+    },
+    {
+      "name": "host-sanitizers",
+      "configurePreset": "host-sanitizers",
+      "configuration": "RelWithDebInfo"
     }
   ],
   "testPresets": [
@@ -140,6 +154,16 @@
       },
       "execution": {
         "noTestsAction": "error"
+      }
+    },
+    {
+      "name": "host-sanitizers",
+      "inherits": "host",
+      "configurePreset": "host-sanitizers",
+      "configuration": "RelWithDebInfo",
+      "environment": {
+        "ASAN_OPTIONS": "halt_on_error=1:abort_on_error=1",
+        "UBSAN_OPTIONS": "halt_on_error=1:print_stacktrace=1"
       }
     }
   ]

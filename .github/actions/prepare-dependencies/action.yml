@@ -11,7 +11,7 @@ runs:
       id: sources
       uses: actions/cache/restore@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
       with:
-        key: sources-v1-${{ runner.os }}-${{ inputs.profile }}-${{ hashFiles('dependencies.lock.json', 'patches/**', 'scripts/bootstrap_dependencies.py', 'scripts/apply_dependency_patches.py', '.github/actions/prepare-dependencies/action.yml') }}
+        key: sources-v2-${{ runner.os }}-${{ runner.arch }}-${{ inputs.profile }}-${{ hashFiles('dependencies.lock.json', 'patches/**', 'scripts/bootstrap_dependencies.py', 'scripts/apply_dependency_patches.py', '.github/actions/prepare-dependencies/action.yml') }}
         path: |
           extern/n64-modern-runtime
           extern/rt64
@@ -40,7 +40,7 @@ runs:
         for dependency in "${dependencies[@]}"; do
           arguments+=(--only "$dependency")
         done
-        "$PYTHON_EXECUTABLE" scripts/bootstrap_dependencies.py "${arguments[@]}"
+        "$PYTHON_EXECUTABLE" scripts/bootstrap_dependencies.py --shallow "${arguments[@]}"
         "$PYTHON_EXECUTABLE" scripts/apply_dependency_patches.py
     # Save before configuration: the cache contains reviewed source checkouts,
     # never build outputs, ROMs, generated retail code, or local game data.

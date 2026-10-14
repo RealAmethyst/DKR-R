@@ -264,6 +264,17 @@
       ]
     },
     {
+      "name": "LibJuice",
+      "repositoryPath": "extern/libdatachannel/deps/libjuice",
+      "expectedCommit": "22145ec3473c73d811417ac9a6aee0de530aaa3f",
+      "patches": [
+        {
+          "path": "patches/libjuice/0001-use-type-correct-picohash-callbacks.patch",
+          "sha256": "4b241581ec9d25534541f3f8f75bd934472c90e31f0aab8eca208287d7043f87"
+        }
+      ]
+    },
+    {
       "name": "usrsctp",
       "repositoryPath": "extern/libdatachannel/deps/usrsctp",
       "expectedCommit": "fec583d54493f879d2ae44a743423bf8a04371ab",
