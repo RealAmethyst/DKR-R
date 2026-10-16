@@ -11,6 +11,8 @@ Windows). Commands with options describe them with `--help`.
 | Apply reviewed patches | `python3 scripts/apply_dependency_patches.py` | Prepared dependencies |
 | Inspect patch readiness | `python3 scripts/apply_dependency_patches.py --check` | Read-only checkout validation |
 | Validate release metadata | `python3 scripts/validate_release_metadata.py` | Repository files |
+| Stage the source code-mod SDK | `python3 scripts/stage_magic_code_sdk.py --output <fresh-directory>` | Authored SDK, guide and address-only kits; optional sample NRMs |
+| Render the modder's book | `python3 scripts/render_magic_code_guide.py --output <fresh-guide.html>` | `modding/MODDERS-GUIDE.txt` and exact public headers; no game execution |
 | Scan source assets | `python3 scripts/scan_for_game_assets.py` | Prunes ignored build/dependency directories |
 | Track Lab Python suites | `python3 scripts/check.py --suite track-lab` | Private fixtures optional; absence is SKIP |
 | Native host build/tests | [CMake presets](../docs/DEVELOPMENT.md) | C++20, CMake and pinned dependencies |
@@ -24,6 +26,11 @@ Windows). Commands with options describe them with `--help`.
 Linux packaging is opt-in with `./Build-Linux.sh --package`. Windows wrappers
 honour `DKRPORT_NO_PAUSE=1`; `Run-Windows.cmd` then waits for the runtime and
 returns its exit status. Runtime arguments are forwarded in both modes.
+
+For 1.0.7, rebuild every platform from the same source and compare both owned
+engine IDs from the final packages. Publish fresh SHA-256 records only after
+packaging. See [Updates](../docs/UPDATES.md) for signed update metadata; a GitHub
+release without that metadata is not an automatic installation offer.
 
 Use these names for new scripts:
 

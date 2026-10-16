@@ -1,4 +1,5 @@
 #include "runtime_platform.hpp"
+#include "application_layout.hpp"
 #include "audio_equalizer.hpp"
 #include "controller_snapshot.hpp"
 #include "controller_mapping_policy.hpp"
@@ -293,8 +294,11 @@ std::string PathUtf8(const std::filesystem::path& path) {
 
 std::filesystem::path RuntimeAssetPath(const std::filesystem::path& relative) {
     if (char* base = SDL_GetBasePath(); base != nullptr) {
-        const std::filesystem::path candidate =
-            std::filesystem::path(base) / relative;
+        auto directory = std::filesystem::u8path(base);
+#if defined(_WIN32)
+        directory = dkr::runtime::layout::windows_application_directory(directory / "DKR-R-Runtime.exe");
+#endif
+        const auto candidate = directory / relative;
         SDL_free(base);
         std::error_code error;
         if (std::filesystem::is_regular_file(candidate, error)) {

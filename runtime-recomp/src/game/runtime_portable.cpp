@@ -1,4 +1,5 @@
 #include "runtime_portable.hpp"
+#include "application_layout.hpp"
 
 #include <cstdint>
 #include <cstdlib>
@@ -88,7 +89,11 @@ bool SafeExistingMarker(std::string& error) {
 } // namespace
 
 void configure(const char* executable_argument) {
+#if defined(_WIN32)
+    g_application_directory = dkr::runtime::layout::windows_application_directory(ExecutablePath(executable_argument));
+#else
     g_application_directory = ExecutablePath(executable_argument).parent_path();
+#endif
     g_marker = g_application_directory.empty() ? std::filesystem::path{} : g_application_directory / "portable.txt";
     g_enabled_at_startup = enabled();
 }

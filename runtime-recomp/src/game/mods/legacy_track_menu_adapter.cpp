@@ -43,9 +43,9 @@ public:
 };
 constexpr std::uint32_t Confirm=0x9000,Back=0x4000;
 }
-TrackMenuAdapter::TrackMenuAdapter(std::vector<Root> tracks,bool allow_races)
-    :tracks_(std::move(tracks)),allow_races_(allow_races) {
-    if(tracks_.empty() || tracks_.size()>512)throw Error("Invalid native custom-track catalogue size.");
+TrackMenuAdapter::TrackMenuAdapter(std::vector<Root> tracks,bool allow_races,std::vector<TrackMenuCup> cups)
+    :tracks_(std::move(tracks)),cups_(std::move(cups)),allow_races_(allow_races) {
+    if((tracks_.empty()&&cups_.empty()) || tracks_.size()>512 || cups_.size()>32)throw Error("Invalid native custom-track catalogue size.");
     std::set<std::string> identities;
     auto add_name=[&](std::string_view name) {
         if(name.empty() || name.size()>255)throw Error("Custom track name exceeds the native text budget.");
@@ -61,13 +61,21 @@ TrackMenuAdapter::TrackMenuAdapter(std::vector<Root> tracks,bool allow_races)
     };
     // Retail deduplicates headers by POINTER, not by text. One pointer per
     // logical row keeps every row labelled without changing stock behaviour.
-    for(std::size_t i=0;i<(tracks_.size()+3)/4;++i) {
+    for(std::size_t i=0;i<(tracks_.size()+5)/6;++i) {
         header_offsets_.push_back(names_.size());add_name("CUSTOM TRACKS");
+    }
+    for(std::size_t i=0;i<(cups_.size()+5)/6;++i) {
+        header_offsets_.push_back(names_.size());add_name("CUSTOM TROPHIES");
     }
     for(const auto& root:tracks_) {
         if(root.content_id.size()!=64 || !identities.insert(root.content_id).second || root.carrier>=128 ||
            !root.vehicles || (root.vehicles&~7U))throw Error("Invalid custom-track menu identity/capabilities.");
         name_offsets_.push_back(names_.size());add_name(root.name);
+    }
+    for(const auto& cup:cups_) {
+        if(cup.id.size()!=64 || !identities.insert(cup.id).second || cup.preview.carrier>255 || cup.vehicle>2 ||
+           (!cup.preview.id.empty()&&cup.preview.id.size()!=64))throw Error("Invalid custom trophy menu identity.");
+        name_offsets_.push_back(names_.size());add_name(cup.name);
     }
     while(names_.size()%8)names_.push_back(0);
     background_offset_=names_.size();
@@ -106,18 +114,55 @@ void TrackMenuAdapter::install_names(std::span<std::uint8_t> guest,std::uint32_t
 }
 TrackMenuEffect TrackMenuAdapter::apply(unsigned event,std::span<std::uint8_t> memory,
     const TrackMenuFields& fields,std::uint32_t arg,std::uint32_t returned) {
-    if(event>17)throw Error("Unknown native custom-track event.");
+    if(event>25)throw Error("Unknown native custom-track event.");
     Guest guest(memory,fields);TrackMenuEffect effect;
     const unsigned stock_rows=static_cast<std::int16_t>(guest.read(MenuField::FutureFunLand,0,2))==-1?4:5;
-    TrackMenuLayout layout(stock_rows,tracks_.size());
-    auto cursor=[&](){return TrackCursor{guest.integer(MenuField::CursorY),guest.integer(MenuField::CursorX)};};
+    TrackMenuLayout layout(stock_rows,tracks_.size(),cups_.size());
+    auto cursor=[&](){return options_.empty()?TrackCursor{guest.integer(MenuField::CursorY),guest.integer(MenuField::CursorX)}:options_.front().cursor;};
+    auto index_at=[&](TrackCursor p)->std::optional<std::size_t> {const auto c=layout.cell(p);return c?c->custom_index:std::nullopt;};
     auto root_at=[&](TrackCursor p)->const Root* {
-        const auto cell=layout.cell(p);return cell && cell->custom_index?&tracks_.at(*cell->custom_index):nullptr;
+        const auto index=index_at(p);return index&&*index<tracks_.size()?&tracks_[*index]:nullptr;
+    };
+    auto cup_at=[&](TrackCursor p)->const TrackMenuCup* {
+        const auto index=index_at(p);return index&&*index>=tracks_.size()?&cups_.at(*index-tracks_.size()):nullptr;
+    };
+    auto scene=[&](TrackSceneChoice value) {
+        const auto cup=std::find_if(cups_.begin(),cups_.end(),[&](const auto& c){return c.id==value.id;});
+        return cup==cups_.end()?value:cup->preview;
     };
     auto choice=[&]()->TrackSceneChoice {
         if(const auto root=root_at(cursor()))return {root->content_id,root->carrier};
+        if(const auto cup=cup_at(cursor()))return {cup->id,cup->preview.carrier};
         return {"",static_cast<unsigned>(guest.integer(MenuField::PreviewCarrier))};
     };
+    // Retail assigns special meaning to columns 4 and 5. Borrow a semantic
+    // cursor ONLY inside its options/load-decision functions; scrolling,
+    // drawing and the immutable stock grid keep the real six-column position.
+    if(event>=18) {
+        if((event&1)==0) {
+            const auto p=cursor();const auto index=index_at(p);
+            if(in_tracks_&&index&&(event!=22||guest.integer(MenuField::Type)>=2)&&
+               (event!=24||guest.integer(MenuField::Delay)>0)) {
+                options_.push_back({event,p,guest.read(MenuField::SelectedX)});
+                const auto column=cup_at(p)?4:0;
+                guest.write(MenuField::CursorX,column);guest.write(MenuField::SelectedX,column);
+                if(event==22&&cup_at(p))guest.write(MenuField::CursorY,0);
+            }
+        }else if(!options_.empty()&&options_.back().event+1==event) {
+            const auto saved=options_.back();options_.pop_back();
+            guest.write(MenuField::CursorX,saved.cursor.column);guest.write(MenuField::CursorY,saved.cursor.row);
+            guest.write(MenuField::SelectedX,saved.selected_x);
+            // Confirmation changes type DURING the options input callback.
+            // Keep the semantic cursor for its parent's final load decision,
+            // then restore at that parent's matching exit notification.
+            if(event==21&&in_tracks_&&guest.integer(MenuField::Type)>=2&&index_at(saved.cursor)) {
+                options_.push_back({22,saved.cursor,saved.selected_x});
+                guest.write(MenuField::CursorX,cup_at(saved.cursor)?4:0);
+                if(cup_at(saved.cursor))guest.write(MenuField::CursorY,0);
+            }
+        }
+        return effect;
+    }
     auto position=[&](TrackCursor p) {
         if(!layout.cell(p))throw Error("Custom selection escaped its logical menu.");
         const int height=guest.integer(MenuField::Height);
@@ -126,6 +171,7 @@ TrackMenuEffect TrackMenuAdapter::apply(unsigned event,std::span<std::uint8_t> m
         guest.real(MenuField::TargetX,static_cast<float>(p.column*320));
         guest.real(MenuField::TargetY,static_cast<float>(-p.row*height));
         if(const auto root=root_at(p))guest.write(MenuField::PreviewCarrier,root->carrier);
+        else if(const auto cup=cup_at(p))guest.write(MenuField::PreviewCarrier,cup->preview.carrier);
         else {
             // The fifth stock row is an original retail allocation quirk;
             // never access it unless the original unlock/layout permits it.
@@ -134,8 +180,8 @@ TrackMenuEffect TrackMenuAdapter::apply(unsigned event,std::span<std::uint8_t> m
         guest.write(MenuField::World,std::min(p.row+1,static_cast<int>(stock_rows)));
     };
     if(event==0) {
-        in_tracks_=true;race_.reset();pending_.reset();candidate_.reset();preview_id_.clear();
-        const auto previous=cursor();const bool custom=root_at(previous)!=nullptr;
+        in_tracks_=true;race_.reset();pending_.reset();candidate_.reset();preview_id_.clear();selected_cup_.clear();
+        const auto previous=cursor();const bool custom=index_at(previous).has_value();
         // Native init resets to Dino Domain after visiting the title screen.
         // Preserve custom selection only on a normal race/menu return, never
         // restore it over the original title-entry reset. Keep retail array
@@ -155,20 +201,21 @@ TrackMenuEffect TrackMenuAdapter::apply(unsigned event,std::span<std::uint8_t> m
     }
     if(event==15) {
         in_tracks_=arg==15;pending_.reset();candidate_.reset();preview_id_.clear();
+        if(arg==15||arg==3||arg==0||arg==1||arg==23)selected_cup_.clear();
         // Results may offer a retry of the same course. Retain its logical
         // identity there, but never let it follow a return to stock menus.
         if(arg!=17)race_.reset();
         return effect;
     }
     if(event==14) {
-        if(race_ && race_->carrier==arg)effect.scene=*race_;
+        if(race_ && race_->carrier==arg)effect.scene=scene(*race_);
         else race_.reset();
         in_tracks_=false;return effect;
     }
     if(event==8) {
         if(pending_) {
             if(pending_->carrier!=arg)throw Error("Background preview identity no longer matches its accepted load.");
-            effect.scene=*pending_;pending_.reset();
+            effect.scene=scene(*pending_);pending_.reset();
         }
         return effect;
     }
@@ -180,10 +227,10 @@ TrackMenuEffect TrackMenuAdapter::apply(unsigned event,std::span<std::uint8_t> m
         const auto sx=static_cast<std::int16_t>(guest.read(MenuField::StickX,8,2));
         const auto sy=static_cast<std::int16_t>(guest.read(MenuField::StickY,8,2));
         const auto next=layout.move(current,sx,sy);
-        const auto root=root_at(current);
-        const bool custom_nav=root || root_at(next);
-        const bool not_ready=root && (!allow_races_ || preview_id_!=root->content_id ||
-            guest.integer(MenuField::BackgroundBusy) || guest.integer(MenuField::LoadedCarrier)!=static_cast<int>(root->carrier));
+        const auto index=index_at(current);const auto selected=choice();
+        const bool custom_nav=index.has_value() || index_at(next).has_value();
+        const bool not_ready=index && (!allow_races_ || preview_id_!=selected.id ||
+            guest.integer(MenuField::BackgroundBusy) || guest.integer(MenuField::LoadedCarrier)!=static_cast<int>(selected.carrier));
         if(custom_nav || not_ready) {
             masked_=true;saved_x_=sx;saved_y_=sy;saved_buttons_=buttons;
             guest.write(MenuField::StickX,0,8,2);guest.write(MenuField::StickY,0,8,2);
@@ -217,7 +264,7 @@ TrackMenuEffect TrackMenuAdapter::apply(unsigned event,std::span<std::uint8_t> m
                 const auto opacity=selected?std::min(255,std::max(0,guest.integer(MenuField::Opacity))*8):255;
                 guest.write(MenuField::Details,opacity,offset+13,1);
                 guest.write(MenuField::Details,selected?128:0,offset+14,1);
-                guest.write(MenuField::Details,4,offset+15,1);
+                guest.write(MenuField::Details,index<tracks_.size()?4:6,offset+15,1);
             }
             // Only add adjacency to custom rows; preserve stock unlock badges,
             // texture/name pointers, frame style and all other native fields.
@@ -239,24 +286,26 @@ TrackMenuEffect TrackMenuAdapter::apply(unsigned event,std::span<std::uint8_t> m
         }
         candidate_.reset();
     } else if(event==9 || event==10 || event==11) {
-        const auto root=root_at(cursor());
-        if(root && root->carrier==arg) {
+        const auto root=root_at(cursor());const auto cup=cup_at(cursor());
+        if((root && root->carrier==arg)||(cup && cup->preview.carrier==arg)) {
             effect.override_return=true;
             if(event==9) {
                 if(!name_address_)throw Error("Custom course names are unavailable.");
                 const auto index=*layout.cell(cursor())->custom_index;
                 effect.return_value=name_address_+static_cast<std::uint32_t>(name_offsets_[index]);
-            } else if(event==11)effect.return_value=root->vehicles;
+            } else if(event==11)effect.return_value=root?root->vehicles:1U<<cup->vehicle;
+            else if(cup)effect.return_value=cup->vehicle;
             else {unsigned vehicle=0;while(!(root->vehicles&(1U<<vehicle)))++vehicle;effect.return_value=vehicle;}
         }
     } else if(event==12 && arg==2) {
         const auto selected=choice();
+        selected_cup_=cup_at(cursor())?cup_at(cursor())->id:std::string{};
         if(!selected.id.empty()) {
             if(!allow_races_)throw Error("Custom race activation has not passed the save-isolation qualification gate.");
-            race_=selected;
+            if(selected_cup_.empty())race_=selected;else race_.reset();
         } else race_.reset();
     } else if(event==13) {
-        if(root_at(cursor()))guest.write(MenuField::VoiceDelay,0);
+        if(index_at(cursor()))guest.write(MenuField::VoiceDelay,0);
     } else if(event==16) {
         if(background_y_ || background_display_list_)throw Error("Nested custom track-menu background draw.");
         // thread3_main draws backgrounds through &gCurrDisplayList BEFORE

@@ -78,7 +78,7 @@ int audit_stock_model(const char* path) {
             if(area)expected.push_back({triangles+f*16,std::uint32_t(fe-f),batch,kind});
         }
     }
-    Registry registry;registry.rebuild(m,base,cache,nt,reference);
+    Registry registry;registry.rebuild(m,base,cache,nt,reference,{},false,false,{},true);
     require(registry.surfaces().size()==expected.size(),"all stock liquid batches survive real cache encoding");
     for(const auto& draw:expected) {
         const auto surface=registry.find(draw.source,draw.count);
@@ -97,6 +97,29 @@ int audit_stock_model(const char* path) {
                 "stock wave material reaches dynamic draws in both revision layouts");
     }
     unsigned flowing=0,mapped_flow=0;
+    if(reference_kind==Kind::Lava) {
+        require(bool(registry.glow_geometry()),"stock lava creates a complete native light cache input");
+        const auto begin=std::chrono::steady_clock::now();
+        LavaGlowCache glow;glow.prepare(registry.glow_geometry(),100);
+        const double prepare_ms=std::chrono::duration<double,std::milli>(std::chrono::steady_clock::now()-begin).count();
+        unsigned steps=0,lit=0;double peak_step_ms=0;
+        while(!glow.ready() && steps<4096) {
+            const auto step=std::chrono::steady_clock::now();glow.step(1);++steps;
+            peak_step_ms=std::max(peak_step_ms,std::chrono::duration<double,std::milli>(std::chrono::steady_clock::now()-step).count());
+        }
+        require(glow.ready(),"stock lava cached lighting completes without GPU queries");
+        unsigned sources=0;
+        for(const auto& t:registry.glow_geometry()->triangles) {
+            if(t.source){++sources;continue;}
+            for(unsigned i=0;i<3;++i)if(glow.energy(t.addresses[i],t.p[i],2)>0.005F)++lit;
+        }
+        require(sources>16 && lit>0,"real volcano extends beyond old point-light cap and illuminates native scenery");
+        const auto stable=glow.ray_tests();for(unsigned i=0;i<120;++i)glow.step(2);
+        require(glow.ray_tests()==stable,"real volcano steady frames never recheck static occlusion");
+        std::cout<<"Lava cache: source-triangles="<<sources<<" receivers="<<glow.receivers()<<" lit-corners="<<lit
+            <<" prepare-ms="<<prepare_ms<<" bounded-steps="<<steps<<" peak-step-ms="<<peak_step_ms
+            <<" cached-occlusion-tests="<<stable<<" steady-frame-lighting-rays=0\n";
+    }
     for(const auto& surface:registry.surfaces())if(surface.kind==Kind::Waterfall || surface.kind==Kind::Fountain) {
         for(auto source=surface.begin;source<surface.end;source+=16) {
             ++flowing;if(const auto* f=registry.flow_triangle(source);f && f->corners[0][3]>0)++mapped_flow;

@@ -2,6 +2,7 @@
 #include "enhanced_water_policy.hpp"
 #include "enhanced_water_ray_geometry.hpp"
 #include "lava_lighting_policy.hpp"
+#include "lava_glow_policy.hpp"
 #include "flowing_water_mapping.hpp"
 #include <bit>
 #include <memory>
@@ -140,7 +141,9 @@ class Registry {
     std::optional<Metadata> metadata_;
     std::shared_ptr<const RayGeometry> ray_geometry_;
     std::vector<LavaEmitter> lava_emitters_;
+    std::shared_ptr<const GlowGeometry> glow_geometry_;
 public:
+    const std::shared_ptr<const GlowGeometry>& glow_geometry() const {return glow_geometry_;}
     std::span<const LavaEmitter> lava_emitters() const { return lava_emitters_; }
     const FlowTriangle* flow_triangle(std::uint32_t source) const {
         source &= 0x1FFFFFFFU;
@@ -233,12 +236,14 @@ public:
     }
     void rebuild(Memory m,std::uint32_t model,std::uint32_t cache,std::uint32_t texture_count,
                  std::uint32_t procedural_batch,std::optional<Metadata> metadata={},bool collect_rays=false,
-                 bool preserve_flow_phase=false,const TextureScrolls& scrolls={}) {
+                 bool preserve_flow_phase=false,const TextureScrolls& scrolls={},bool collect_glow=false) {
         const auto previous_flows=preserve_flow_phase ? std::move(flow_triangles_) : std::vector<FlowTriangle>{};
         flow_triangles_.clear();
         surfaces_.clear(); wet_triangles_.clear(); vertical_images_.clear(); procedural_.reset();
         lava_emitters_.clear();
         const auto previous_rays=std::move(ray_geometry_);
+        const auto previous_glow=std::move(glow_geometry_);
+        auto glow=collect_glow ? std::make_shared<GlowGeometry>() : nullptr;
         auto rays=collect_rays ? std::make_shared<RayGeometry>() : nullptr;
         std::vector<RayVertex> falling_vertices;
         bool ray_limit=false;
@@ -305,6 +310,33 @@ public:
                 auto e=texture==255 ? MaterialEvidence{} : materials[texture];
                 e.flags=m.u32(batch+8); e.geometry_valid=true;
                 auto kind=classify(e);
+                // Native, immutable level geometry only. Never collect racers,
+                // billboards, transparent overlays or a truncated blocker mesh.
+                const auto glow_texture_flags=texture==255 ? 0 : m.u16(m.u32(textures+texture*8)+6);
+                if(glow && glow->complete && (kind==Kind::Lava ||
+                   (kind==Kind::None && (texture==255 || e.texture_valid) &&
+                    opaque_ray_material(e.flags,glow_texture_flags)))) {
+                    for(std::uint32_t i=f;i<fe;++i) {
+                        const auto tri=tris+i*16;
+                        const std::array<std::uint32_t,3> indices{m.u8(tri+1),m.u8(tri+2),m.u8(tri+3)};
+                        if(std::any_of(indices.begin(),indices.end(),[&](auto n){return n>=ve-v;})) {
+                            glow->complete=false;glow->triangles.clear();break;
+                        }
+                        GlowTriangle triangle{};triangle.source=kind==Kind::Lava;
+                        bool opaque=true;
+                        for(unsigned j=0;j<3;++j) {
+                            const auto p=verts+(v+indices[j])*10;
+                            triangle.addresses[j]=p&0x1FFFFFFFU;triangle.p[j]=m.vertex(p);
+                            opaque &= m.u8(p+9)==255;
+                        }
+                        if(!valid_triangle(triangle.p[0],triangle.p[1],triangle.p[2]))continue;
+                        if(!triangle.source && !opaque)continue;
+                        if(glow->triangles.size()==kGlowTriangleLimit) {
+                            glow->complete=false;glow->triangles.clear();break;
+                        }
+                        glow->triangles.push_back(triangle);
+                    }
+                }
                 if(kind==Kind::None) {
                     const auto texture_flags=texture==255 ? 0 : m.u16(m.u32(textures+texture*8)+6);
                     if(!rays || (texture!=255 && !e.texture_valid) || !opaque_ray_material(e.flags,texture_flags))continue;
@@ -426,6 +458,18 @@ public:
             }
         }
         std::sort(surfaces_.begin(),surfaces_.end(),[](const Surface& a,const Surface& b){return a.begin<b.begin;});
+        if(glow && glow->complete && std::any_of(glow->triangles.begin(),glow->triangles.end(),
+            [](const GlowTriangle& t){return t.source;})) {
+            bool same=previous_glow && previous_glow->triangles.size()==glow->triangles.size();
+            for(std::size_t i=0;same && i<glow->triangles.size();++i) {
+                const auto& a=previous_glow->triangles[i];const auto& b=glow->triangles[i];
+                same=a.source==b.source && a.addresses==b.addresses;
+                for(unsigned j=0;same && j<3;++j) {
+                    const auto delta=glow_sub(a.p[j],b.p[j]);same=glow_dot(delta,delta)==0;
+                }
+            }
+            glow_geometry_=same ? previous_glow : std::move(glow);
+        }
         std::sort(flow_triangles_.begin(),flow_triangles_.end(),[](const FlowTriangle& a,const FlowTriangle& b){return a.source<b.source;});
         if(ray_limit || (rays && rays->vertices.size()+falling_vertices.size()>kMaximumRayTriangles*3))rays.reset();
         if(rays) {

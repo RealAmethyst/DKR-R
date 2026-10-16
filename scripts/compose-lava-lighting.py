@@ -8,6 +8,8 @@ root=Path(__file__).resolve().parents[1]
 stage=Path(sys.argv[1]).resolve()
 output=root/'patches/enhanced-water/dkr-lava-lighting.patch'
 layers=[output] if 'finishLava' in (stage/'src/render/rt64_framebuffer_renderer.cpp').read_text() else []
+if 'lavaGlowActive' in (stage/'src/hle/rt64_workload.h').read_text():
+    layers.insert(0,root/'patches/enhanced-water/dkr-lava-glow.patch')
 changes=[]
 def replace(text,before,after):
     if text.count(before)!=1:raise SystemExit(f'Non-unique lighting context: {before[:120]}')
@@ -71,7 +73,7 @@ RenderPipeline *WaterRenderer::lavaLightingPipeline(RenderDevice *device,RenderS
             lavaLightingCS=checkedWaterResource(device->createShader(CREATE_SHADER_INPUTS(LavaLightingCSBlobDXIL,LavaLightingCSBlobSPIRV,LavaLightingCSBlobMSL,"CSMain",format)));
             LavaLightingSet lightSet;WaterRaySet raySet;
             RenderPipelineLayoutBuilder builder;builder.begin(false,true);
-            builder.addPushConstant(0,0,sizeof(interop::WaterPushConstants),RenderShaderStageFlag::COMPUTE|RenderShaderStageFlag::VERTEX|RenderShaderStageFlag::PIXEL);
+            builder.addPushConstant(0,0,sizeof(uint32_t)*4,RenderShaderStageFlag::COMPUTE|RenderShaderStageFlag::VERTEX|RenderShaderStageFlag::PIXEL);
             builder.addDescriptorSet(*descriptorSet);builder.addDescriptorSet(raySet);builder.addDescriptorSet(lightSet);builder.end();
             lavaLightingLayout=checkedWaterResource(builder.create(device));
             lavaLightingCompute=checkedWaterResource(device->createComputePipeline(RenderComputePipelineDesc(lavaLightingLayout.get(),lavaLightingCS.get(),8,8,1)));
@@ -95,7 +97,7 @@ bool WaterRenderer::prepareLavaLighting(RenderWorker *worker,uint32_t index,cons
     if(index>=scenes.size() || !lavaLightingCompute)return false;
     auto& scene=scenes[index];
     const float q=draw.material.shoreCounts[0].x;
-    const uint32_t divisor=q>=3 ? 4 : q>=1.5f ? 2 : q>=0.5f ? 1 : 2;
+    const uint32_t divisor=q>=12 ? 16 : q>=6 ? 8 : 4;
     const uint32_t width=(scene.width+divisor-1)/divisor,height=(scene.height+divisor-1)/divisor;
     if(scene.lavaLight && scene.lavaWidth==width && scene.lavaHeight==height) {scene.lavaPrepared=true;return true;}
     if(scene.lavaPrepared)return false; // Earlier batches already own this descriptor.
@@ -146,6 +148,8 @@ bool WaterRenderer::drawLavaLighting(RenderWorker *worker,uint32_t drawIndex,boo
     // Pipeline/resource creation belongs to workload preparation, never record.
     auto it=lavaLightingPipelines.find(uint32_t(scene.sourceColor->multisampling.sampleCount));
     if(it==lavaLightingPipelines.end() || !it->second || !scene.lavaLightSet)return false;
+    const auto bounds=lavaLightingBounds(d);
+    if(bounds[2]<=bounds[0] || bounds[3]<=bounds[1])return false;
     // Fresh capture after world geometry, before orthographic HUD. It shares
     // existing viewport scratch resources; no new full-resolution attachment.
     scene.captured=false;scenes[scene.captureOwner].opticalCaptured=false;
@@ -157,29 +161,30 @@ bool WaterRenderer::drawLavaLighting(RenderWorker *worker,uint32_t drawIndex,boo
     worker->commandList->setComputeDescriptorSet(rays.set->get(),1);
     worker->commandList->setComputeDescriptorSet(scene.lavaLightSet->get(),2);
     worker->commandList->setPipeline(lavaLightingCompute.get());
-    interop::WaterPushConstants pc{drawIndex};worker->commandList->setComputePushConstants(0,&pc);
     const float quality=d.material.shoreCounts[0].x;
-    const uint32_t divisor=quality>=3 ? 4 : quality>=1.5f ? 2 : quality>=0.5f ? 1 : 2;
-    const uint32_t x=uint32_t(std::max(0.0f,std::floor(d.viewBounds.x/divisor)));
-    const uint32_t y=uint32_t(std::max(0.0f,std::floor(d.viewBounds.y/divisor)));
-    const uint32_t right=std::min(scene.lavaWidth,uint32_t(std::ceil(d.viewBounds.z/divisor)));
-    const uint32_t bottom=std::min(scene.lavaHeight,uint32_t(std::ceil(d.viewBounds.w/divisor)));
+    const uint32_t divisor=quality>=12 ? 16 : quality>=6 ? 8 : 4;
+    const uint32_t x=uint32_t(std::max(0.0f,std::max(float(d.viewBounds.x/divisor),std::floor(bounds[0]/divisor)-1)));
+    const uint32_t y=uint32_t(std::max(0.0f,std::max(float(d.viewBounds.y/divisor),std::floor(bounds[1]/divisor)-1)));
+    const uint32_t right=std::min(scene.lavaWidth,uint32_t(std::min(float(std::ceil(d.viewBounds.z/divisor)),std::ceil(bounds[2]/divisor)+1)));
+    const uint32_t bottom=std::min(scene.lavaHeight,uint32_t(std::min(float(std::ceil(d.viewBounds.w/divisor)),std::ceil(bounds[3]/divisor)+1)));
     if(right<=x || bottom<=y)return false;
+    const std::array<uint32_t,4> pc{drawIndex,x,y,0};worker->commandList->setComputePushConstants(0,pc.data());
     worker->commandList->dispatch((right-x+7)/8,(bottom-y+7)/8,1);
     worker->commandList->barriers(RenderBarrierStage::GRAPHICS,RenderTextureBarrier(scene.lavaLight.get(),RenderTextureLayout::SHADER_READ));
     worker->commandList->setViewports(viewport);
-    worker->commandList->setScissors(RenderRect(int32_t(d.viewBounds.x),int32_t(d.viewBounds.y),int32_t(d.viewBounds.z),int32_t(d.viewBounds.w)));
+    worker->commandList->setScissors(RenderRect(int32_t(bounds[0]),int32_t(bounds[1]),int32_t(bounds[2]),int32_t(bounds[3])));
     worker->commandList->setGraphicsPipelineLayout(lavaLightingLayout.get());
     worker->commandList->setGraphicsDescriptorSet(materialSet(drawIndex),0);
     worker->commandList->setGraphicsDescriptorSet(rays.set->get(),1);
     worker->commandList->setGraphicsDescriptorSet(scene.lavaLightSet->get(),2);
     worker->commandList->setPipeline(it->second.get());
-    worker->commandList->setGraphicsPushConstants(0,&pc);
+    worker->commandList->setGraphicsPushConstants(0,pc.data());
     return true;
 }
 '''
 # drawLavaLighting prepares bindings; caller binds the target and issues the draw.
 def renderer(s):
+    s=replace(s,'#include "rt64_water_renderer.h"','#include "rt64_water_renderer.h"\n#include "LavaLightingBounds.h"')
     s=replace(s,'scene.captured=false; scene.opticalCaptured=false; scene.surfaceCleared=false;',
         'scene.captured=false; scene.opticalCaptured=false; scene.surfaceCleared=false; scene.lavaPrepared=false;')
     for fmt in ('spirv','dxil'):

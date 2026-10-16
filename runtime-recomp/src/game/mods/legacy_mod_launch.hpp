@@ -4,8 +4,10 @@
 #include <functional>
 
 namespace dkr::mods {
+namespace code {struct FrozenSet;}
 struct PreparedModLaunch {
     std::shared_ptr<RuntimeSession> session;
+    std::shared_ptr<const code::FrozenSet> code;
     std::filesystem::path save_subfolder,save_path,pak_directory;
     std::string fingerprint;
 };

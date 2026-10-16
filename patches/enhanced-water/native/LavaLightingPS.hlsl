@@ -17,7 +17,7 @@ float4 PSMain(float4 position : SV_Position) : SV_Target {
     float3 dx=waterWorldFromPixel(position.xy+float2(1,0),sceneDepth.Load(int3(pixel+int2(1,0),0)),p)-world;
     float3 dy=waterWorldFromPixel(position.xy+float2(0,1),sceneDepth.Load(int3(pixel+int2(0,1),0)),p)-world;
     if(any(!isfinite(world)) || length(dx)>150 || length(dy)>150)discard;
-    uint divisor=p.material.shoreCounts[0].x>=3 ? 4 : p.material.shoreCounts[0].x>=1.5 ? 2 : p.material.shoreCounts[0].x>=0.5 ? 1 : 2;
+    uint divisor=p.material.shoreCounts[0].x>=12 ? 16 : p.material.shoreCounts[0].x>=6 ? 8 : 4;
     float2 at=position.xy/divisor-0.5,f=frac(at);
     int2 baseAt=int2(floor(at));
     int2 lo=int2(floor(p.viewBounds.xy/divisor)),hi=int2(ceil(p.viewBounds.zw/divisor))-1;

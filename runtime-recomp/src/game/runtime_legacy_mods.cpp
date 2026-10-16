@@ -42,7 +42,7 @@ struct MenuState {
     std::mutex mutex;
     mods::TrackMenuAdapter adapter;
     bool allow_races, catalog_ready=false;
-    MenuState(std::vector<mods::Root> roots,bool races):adapter(std::move(roots),races),allow_races(races){}
+    MenuState(std::vector<mods::Root> roots,bool races,std::vector<mods::TrackMenuCup> cups={}):adapter(std::move(roots),races,std::move(cups)),allow_races(races){}
     explicit MenuState(mods::TrackMenuAdapter value):adapter(std::move(value)),allow_races(true),catalog_ready(true){}
 };
 struct CharacterState {
@@ -83,6 +83,7 @@ struct WorldState {
     RecompiledEntrypoint random=nullptr;
     RecompiledEntrypoint texture_animation=nullptr;
     std::shared_ptr<const custom_tracks::PreparedTracks> authored;
+    std::vector<mods::TrackMenuCup> cups;
     bool private_owner=false,frozen_online=false,custom_ai=false;
     std::uint32_t pending_course_heap=0;
 };
@@ -224,6 +225,7 @@ void begin_session(std::shared_ptr<mods::RuntimeSession> value) {
     launch.store(nullptr);characters.store(nullptr);menu.store(nullptr);session.store(std::move(value));
     ordinary_world.frozen_online=false;ordinary_world.authored.reset();ordinary_world.custom_ai=false;
     ordinary_world.pending_course_heap=0;
+    ordinary_world.cups.clear();
     ordinary_music_enabled=false;ordinary_world.music.store(nullptr);
 }
 void begin_online(std::shared_ptr<const mods::online::RuntimeResources> resources) {
@@ -242,11 +244,11 @@ void begin_online(std::shared_ptr<const mods::online::RuntimeResources> resource
 }
 void begin_prepared(std::shared_ptr<const mods::PreparedModLaunch> prepared) {
     begin_session(prepared?prepared->session:nullptr);
-    if(!prepared || !prepared->session)return;
+    if(!prepared || (!prepared->session&&!prepared->code))return;
     if(prepared->save_subfolder.empty() || prepared->save_path.empty() || prepared->pak_directory.empty())
         throw mods::Error("Modded runtime admission requires isolated save paths.");
-    if(!prepared->session->tracks().empty())begin_track_menu(true);
-    if(prepared->session->characters())begin_character_menu();
+    if(prepared->session&&!prepared->session->tracks().empty())begin_track_menu(true);
+    if(prepared->session&&prepared->session->characters())begin_character_menu();
     launch.store(std::move(prepared));
 }
 std::shared_ptr<const mods::PreparedModLaunch> prepared_launch(){return launch.load();}
@@ -326,6 +328,20 @@ void begin_character_menu() {
 void begin_track_menu(bool allow_races) {
     auto active=session.load();if(!active)throw mods::Error("No catalogue is admitted for the native menu.");
     menu.store(std::make_shared<MenuState>(active->tracks(),allow_races));
+}
+void set_trophy_menu(std::vector<mods::TrackMenuCup> cups) {
+    ordinary_world.cups=std::move(cups);
+    if(ordinary_world.cups.empty())return;
+    const auto assets=ordinary_world.session.load();
+    auto roots=assets?frozen_roots(*assets,ordinary_world.authored.get()):std::vector<mods::Root>{};
+    auto state=std::make_shared<MenuState>(std::move(roots),true,ordinary_world.cups);
+    // Frozen online IDs already exist at bootstrap. Offline Track Lab IDs
+    // are appended at retail initialization, so rebuild once at menu entry.
+    state->catalog_ready=ordinary_world.frozen_online;ordinary_world.menu.store(std::move(state));
+}
+std::string selected_trophy() {
+    const auto state=menu.load();if(!state)return {};
+    std::lock_guard lock(state->mutex);return state->adapter.selected_cup();
 }
 void request_scene(const std::string& id,unsigned carrier) {
     // Appended .dkrmap level IDs load through the custom-track asset hooks.
@@ -737,7 +753,7 @@ extern "C" int dkr_legacy_track_menu(std::uint8_t* rdram,recomp_context* ctx,uns
         // when there are no legacy mods enabled for this session.
         if(event==0 && (!state || !state->catalog_ready) && (legacy::frozen_courses() || !netplay::session().active())) {
             const auto authored=legacy::authored_courses();
-            if(!authored.empty()) {
+            if(!authored.empty() || !legacy::current_world().cups.empty()) {
                 const auto active=legacy::session.load();
                 auto roots=active?active->tracks():std::vector<dkr::mods::Root>{};
                 for(const auto& track:authored) {
@@ -751,7 +767,7 @@ extern "C" int dkr_legacy_track_menu(std::uint8_t* rdram,recomp_context* ctx,uns
                     root.vehicles=track.vehicles;
                     roots.push_back(std::move(root));
                 }
-                state=std::make_shared<legacy::MenuState>(std::move(roots),state?state->allow_races:true);
+                state=std::make_shared<legacy::MenuState>(std::move(roots),state?state->allow_races:true,legacy::current_world().cups);
                 legacy::menu.store(state);
             }
             if(state)state->catalog_ready=true;
@@ -889,18 +905,19 @@ struct WorldRestore final:ModWorld::Restore {
 }
 ModWorld::ModWorld(std::shared_ptr<mods::RuntimeSession> assets,GamePayload calls,
     RecompiledEntrypoint animation,std::shared_ptr<const custom_tracks::PreparedTracks> authored,bool ai,
-    RecompiledEntrypoint random,std::shared_ptr<const mods::online::MusicLibrary> music,RecompiledEntrypoint texture)
+    RecompiledEntrypoint random,std::shared_ptr<const mods::online::MusicLibrary> music,RecompiledEntrypoint texture,std::vector<mods::TrackMenuCup> cups)
     :state_(std::make_unique<State>()) {
     if(!assets)throw mods::Error("An owned mod world needs admitted resources.");
     (void)mods::online::course_display_budgets(authored.get());
     state_->session.store(assets);state_->private_owner=true;state_->calls=calls;
     state_->animation=animation;state_->random=random;state_->authored=std::move(authored);state_->custom_ai=ai;
     state_->texture_animation=texture;
+    state_->cups=std::move(cups);
     state_->music.store(std::make_shared<MusicBinding>(std::move(music),assets->boot_bank()->revision()=="us.v80"));
     if(ai && !random)throw mods::Error("Owned custom AI needs the reviewed private RNG entry.");
     auto roots=frozen_roots(*assets,state_->authored.get());
-    if(!roots.empty()) {
-        auto menu=std::make_shared<MenuState>(std::move(roots),true);menu->catalog_ready=true;state_->menu.store(std::move(menu));
+    if(!roots.empty() || !state_->cups.empty()) {
+        auto menu=std::make_shared<MenuState>(std::move(roots),true,state_->cups);menu->catalog_ready=true;state_->menu.store(std::move(menu));
     }
     if(assets->characters()) {
         auto characters=std::make_shared<CharacterState>(assets->characters());
@@ -911,6 +928,15 @@ ModWorld::ModWorld(std::shared_ptr<mods::RuntimeSession> assets,GamePayload call
 ModWorld::~ModWorld()=default;
 const mods::AssetBus& ModWorld::bus()const{return state_->session.load()->bus();}
 const std::string& ModWorld::error()const{return state_->error;}
+void ModWorld::select_course(const std::string& id,unsigned carrier) {
+    // This explicit owner never falls through to the ordinary launcher world.
+    if(state_->authored&&std::ranges::any_of(state_->authored->courses,[&](const auto& c){return unsigned(c.level_id)==carrier;}))return;
+    state_->session.load()->request(id,carrier);
+}
+std::string ModWorld::selected_trophy()const {
+    const auto menu=state_->menu.load();if(!menu)return {};
+    std::lock_guard lock(menu->mutex);return menu->adapter.selected_cup();
+}
 namespace {
 mods::Bytes capture_world(const WorldState& state) {
     mods::CheckpointWriter out;out.u32(4);out.block(state.session.load()->checkpoint());

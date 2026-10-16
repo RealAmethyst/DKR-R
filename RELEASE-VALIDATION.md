@@ -1,5 +1,113 @@
 # Release validation
 
+## 16 October 2026 — v1.0.7 beta 2 and repository synchronisation
+
+The current source label is `1.0.7+beta.2`, retaining the existing code mods'
+minimum-host 1.0.7 compatibility without weakening version, trust or admission
+checks. GitHub `main` was fetched before this source update; its latest commit
+was `a48779d` (PR #60), already in local history. Contributor commits are retained.
+
+The beta 2 packages were built before this repository-cleanup pass. Windows
+x64, Linux x86_64, Linux ARM64 and Android ARM64 compiled, with both Linux
+AppImages and a separate Steam Deck portable archive. All four configured
+owned contracts agree:
+
+```text
+176b4392d45f8e3bbd70c09330d5cb8eb03521fb9b58a9ee32e3345ccdda0869
+```
+
+Static archive checks covered Windows/APK CRCs, native architecture/version/UI
+markers, the complete guide and unchanged Trophy/AI packages. Both AppImages'
+compressed native executables and guides were read using `unsquashfs`, not
+launched. Steam Deck archive paths, entry script, architecture and guide were
+also inspected. Android is versionCode 1070007, minSdk 28/targetSdk 35, with the
+same application ID and existing signing certificate; signature verification
+succeeded. No new signing key or signed automatic-update offer was created.
+
+Read-only inspectors resolved three sample packages against ordinary/private
+US v77/v80 dispatchers on Windows and Linux: 24 records, each `executed=false`.
+The existing Trophy Races 1.0.2 and AI Difficulty 1.0.0 packages are unchanged.
+The new Starting Bananas teaching sample compiled; its gameplay remains unqualified.
+The Modders Guide has 33 chapters, about 13,000 words and coverage of all 37
+public functions/helpers, with exact headers in its HTML appendix.
+
+Package SHA-256 records from that build pass:
+
+```text
+2deb76f071c4413bfe98335700e8dcd955f16b7b530d7201441561bae67c6b5e  Windows-x64.zip
+93c9d873a7b0957ca1a588470f5fe08fe9f4cf738cdc554f67700139666468af  Linux-x86_64.AppImage
+a5e6798460abbc31014366ce9579eb27aad15c224a4dac692704c2325f393e46  Linux-aarch64.AppImage
+59492f6aa4dc671ee681e0a7aeade2132a47525db91e4b2e7ca9c4df438443bd  SteamDeck-x86_64.tar.gz
+6a00d73ba828e4662278c66e2c64bf2fad9617b19f0c6fab8d43f00eb6c6ee98  Android-arm64.apk
+df3ed85e082777f0d1ad0e8837cea96af42c564384f9dc3a682ef2dcb2297d38  Custom-Magic-Codes-SDK-1.0.7-beta.2.zip
+e609acac80908e8c66aec87fa80a277195b6403c75df14b0bf89a06881397952  prior beta 2 source archive
+```
+
+This repository cleanup aligns AppStream/current documentation and metadata
+validation with the beta label, preserves receipt-pinned SDK bytes on checkout,
+and keeps compiled mods/packages out of Git. Those repository/documentation
+updates post-date the package hashes above; they are not rebuilt binary claims.
+An exported Git index passed the source asset scan (1,446 files) and release
+metadata validation (58 patch files). Both SDK reference kits retained all four
+receipt-pinned hashes after export. Static parsing covered the changed Python,
+JSON, TOML, XML and PowerShell sources; no runtime checks were invoked.
+No game, mod callback, CTest, runtime self-test, replay, online or physical-device
+session was run in either pass. Gameplay and controller acceptance remain with
+the maintainer. Protected dependencies/generated game sources are not edited.
+
+## 15 October 2026 — 1.0.7 integration and qualification
+
+Local main includes upstream `a48779d` (PR #60). The pre-existing updater,
+launcher/overlay and lava changes were restored after the fast-forward; the
+original Git stash is retained as a recovery snapshot. Dependency changes use
+the reviewed patch pipeline, not manual submodule edits. Protected generated
+inputs are unchanged.
+
+The reported SteamOS-host/Windows-client 1.0.6 startup rejection has no paired
+failure logs. The public Windows ZIP and Linux x86_64 AppImage contain matching
+v77/v80 replay-engine IDs, so a platform-specific engine mismatch in those
+particular archives is not established. Version 1.0.7 adds named contract
+diagnostics and earlier engine/resource admission; it does not bypass the
+safety gate or claim the original session was reproduced.
+
+A separate regression reproduces a concrete portability bug: Windows-generated
+guest text (including manifest.json) uses CRLF, while Linux uses LF. The previous
+raw-file hash gives different engine IDs for otherwise identical source. The
+fixed identity normalises CRLF only for C/C++/header/JSON text. Relocated roots,
+reordered inputs and different text newlines now match; code/manifest edits and
+binary byte changes still differ, and out-of-root inputs remain rejected.
+This is a demonstrated compatibility defect, not proof of the unlogged session's
+exact cause. The generated files themselves were not edited.
+
+An installed-library probe independently reconstructs 75 v1.0 content roots
+(53 source payloads) and 38 v1.1 characters (37 payloads) on Windows and Linux.
+Both revisions' manifest, resource and boot-bank hashes match exactly across
+the two hosts. Both runs used installed references with zero importer-worker
+launches, preserved source catalogue hashes, and passed 174 isolation checks.
+These are reconstruction checks, not a physical SteamOS or WAN gameplay test.
+
+Windows x64, Linux x86_64, Linux ARM64 and Android ARM64 Release compilation
+completed from the same source. Steam Deck uses the Linux x86_64 AppImage.
+Both owned revision IDs agree across all four build configurations:
+
+- US v1.0/v77: `c0c2c3ffa49006dfc263bcf248b8ab5a252722661056cae67fe6d01cade6eb6d`
+- US v1.1/v80: `62c0319dc3d8a24402351e33d0cf2777c6d71010d04b96f371e871f896bf9121`
+
+The maintainer has reserved testing and approval for themselves. Running checks
+were stopped at that request; the remaining work is build/package only. Earlier
+recorded checks are retained as evidence, not described as a completed final
+acceptance pass. The ARM64 AppImage is packaged with explicit runtime deferral,
+without starting the game or its helper self-tests. Physical Steam Deck/ARM/
+Android, WAN and mixed-architecture acceptance remain with the maintainer.
+The existing architecture/floating-point compatibility gates remain enforced.
+
+The Android package is version 1.0.7, code 1070001, with the existing application
+and APK signing identity. No new Apple binaries are part of this delivery.
+The private automatic-update signing key has not been located; manual packages
+are provided without fabricating a signature or replacing the public trust key.
+Nothing has been pushed, tagged or published by this packaging pass. The original
+recovery stash remains retained and local release changes remain uncommitted.
+
 ## 12 October 2026 — 1.0.6 public release integration through PR #59
 
 The release preserves the user-tested local work in checkpoint `e850efd` and

@@ -1,18 +1,19 @@
 #include "WaterProjection.hlsli"
-[[vk::push_constant]] ConstantBuffer<WaterPushConstants> gConstants : register(b0);
+struct LavaPushConstants {uint drawIndex;uint offsetX;uint offsetY;uint reserved;};
+[[vk::push_constant]] ConstantBuffer<LavaPushConstants> gConstants : register(b0);
 StructuredBuffer<WaterDrawParams> waterDraws : register(t1);
 Texture2D<float> sceneDepth : register(t3);
 RWTexture2D<float4> lightingOutput : register(u1,space2);
 #include "LavaLighting.hlsli"
 
 uint lavaSampleDivisor(WaterMaterial m) {
-    return m.shoreCounts[0].x>=3 ? 4 : m.shoreCounts[0].x>=1.5 ? 2 : m.shoreCounts[0].x>=0.5 ? 1 : 2;
+    return m.shoreCounts[0].x>=12 ? 16 : m.shoreCounts[0].x>=6 ? 8 : 4;
 }
 [numthreads(8,8,1)]
 void CSMain(uint3 thread : SV_DispatchThreadID) {
     WaterDrawParams p=waterDraws[gConstants.drawIndex];
     uint divisor=lavaSampleDivisor(p.material);
-    uint2 at=uint2(max(0,floor(p.viewBounds.xy/divisor)))+thread.xy;
+    uint2 at=uint2(gConstants.offsetX,gConstants.offsetY)+thread.xy;
     uint w,h;lightingOutput.GetDimensions(w,h);
     if(any(at>=uint2(w,h)) || any(at>=uint2(ceil(p.viewBounds.zw/divisor))))return;
     float2 pixel=clamp((float2(at)+0.5)*divisor,p.viewBounds.xy+1.5,p.viewBounds.zw-1.5);

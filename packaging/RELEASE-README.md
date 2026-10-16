@@ -1,8 +1,30 @@
-# DKR-R 1.0.6
+# DKR-R v1.0.7 beta 2
 
-There's been a lot added! This release includes custom tracks and characters,
-Track Lab integration, texture-pack priorities, online mod sharing, enhanced
-water and the updated launcher/overlay.
+This beta adds Custom Magic Codes, Custom Trophy Races and AI & Boss Difficulty.
+Import the supplied `.nrm` through Mods / Hacks, then review, approve and enable
+it in Custom Magic Codes. The trophy editor has Cups, full-width Lineup and Share
+screens, controller navigation, on-screen text entry and `.dkrcup` sharing.
+Custom cups sit below the six-column Custom Tracks rows; stock trophies remain.
+
+Cup Options and Choose a Track no longer display internal text-field labels
+that pushed their keyboard buttons beyond the row. Launcher and overlay share
+the same fix. The SDK includes the complete Modders Guide as text and HTML.
+
+The technical version is `1.0.7+beta.2` to retain the supplied mods' 1.0.7
+minimum-host compatibility. Use matching beta 2 builds for online sessions.
+The builds were compiled and statically inspected; gameplay/controller/device
+acceptance remains with the maintainer. See RELEASE-NOTES.txt for this beta.
+
+## Carried forward from 1.0.7
+
+This update adds earlier online compatibility checks, built-in update checks,
+tidier launcher/overlay wording and lighter surrounding lava glow. Custom
+tracks, characters, Track Lab, texture priorities and enhanced water carry on
+from the previous release.
+
+Everyone in an online lobby needs 1.0.7. Startup now reports the mismatched
+component instead of a generic contract error. See RELEASE-NOTES.txt for
+changes and the source release-validation record for actual test coverage.
 
 Packages cover Windows x64, Linux x86_64/ARM64 AppImages, Steam Deck and
 Android ARM64. Steam Deck uses the Linux x86_64 payload. ARM, Android and
@@ -11,18 +33,27 @@ Experimental Rollback and hardware ray tracing remain experimental.
 
 In Play, Skip intro logos offers Start menu or Character select. Start menu
 keeps its original first sequence. The setting does not change online startup.
-RTX lava lighting adds optional pulsating light to nearby geometry, with
-its own on/off checkbox, Performance/Balanced/High quality and intensity,
-pulse strength/speed and range settings. Balanced uses a half-resolution
-lighting field; Performance uses quarter resolution. Neither changes the
-game's selected image resolution. The molten surface has rough hot-rock
-islands and shaded ridges, and stays enhanced when scene lighting is off.
-Unsupported devices keep the emissive lava surface. This is ray-tested diffuse lighting, not a full
-multi-bounce path tracer; dynamic racers are not hardware occluders.
+Lava has a subtle cached glow on nearby static walls and ground, with its own
+on/off checkbox, intensity, pulse and range settings. It needs no per-frame
+lighting rays or additional lighting pass. This replaces the costly ray-traced
+lava-lighting option without changing water's hardware reflections. Lava pulses
+between yellow-white and orange-red heat, not black. Rough hot-rock islands,
+shaded ridges and surface brightness remain independent of surrounding glow.
 
-Android build 1060002 keeps the previous application ID and signing identity
+Android build 1070007 keeps the previous application ID and signing identity
 to preserve upgrades. Its release Java wrapper is not debuggable; it retains
 the existing development signing key, not a newly provisioned production key.
+
+Updates are in **About DKR-R → Updates**, with a check button in Play. Startup checks
+run in the background. Downloading and installing require your approval and do
+not replace saves, mods, textures or portable data. Published v1.0.6 needs one
+manual upgrade to get the updater. Future automatic installations require
+signed update metadata on the GitHub release. Android's updater bootstrap uses
+the original updater version code 1070001; beta 2 increments it to 1070007 and
+requires the same compatible APK signing identity.
+On Windows, launch `DKR-R.exe` from the main folder. The runtime and helpers
+stay inside `libexec/dkr-r`; keep the whole folder together. Portable mode's
+`portable.txt` still goes beside the public `DKR-R.exe`.
 
 ## What's changed since 1.0.5
 

@@ -57,6 +57,11 @@ float4 lavaSurface(float2 world,float time,float footprint) {
     molten*=0.80+facet*0.27+(grain-0.5)*fineFilter*0.20;
     return float4(lerp(molten,rock,crust),crust);
 }
+float3 lavaHeatPalette(float3 radiance,float cooling) {
+    // Keep red self-emission throughout the cycle. The cool endpoint is
+    // orange/red molten rock, NOT a brightness multiplier approaching zero.
+    return radiance*lerp(float3(1,1,1),float3(0.92,0.16,0.035),saturate(cooling));
+}
 float3 lavaDisplayColor(float3 radiance,float3 fogColor,float fogAmount) {
     // Compress emission without clipping all the bright detail to solid
     // white. Apply the course's distance fog after the display compression.

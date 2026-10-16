@@ -4,6 +4,78 @@ This is the player-facing release history. Current instructions live in the
 [documentation index](docs/README.md); dated investigations retain the findings
 and limitations of the build they describe.
 
+## 1.0.7 beta 2 — 16 October 2026
+
+- Add Custom Magic Codes API 1: portable guest C packages, explicit code
+  approval, generated settings, eligible native hooks/calls, typed game services
+  and frozen host-owned online configuration through Experimental Rollback.
+- Include separately importable Custom Trophy Races 1.0.2 and AI & Boss
+  Difficulty 1.0.0. Custom cups use their own Track Select rows after six-column
+  custom tracks; the original trophies stay available.
+- Give the trophy editor Cups, full-width Lineup and Share screens, controller
+  shortcuts, on-screen text entry, automatic track refresh and data-only cup
+  import/export. Custom Magic Code cards share the track/character layout.
+- Fix right-edge overflow in nested cup dialogs: hide the shared text field's
+  internal ImGui label so it cannot push the keyboard beyond its row. Bound
+  dropdowns and their choice rows to the current content area.
+- Add the full Modders Guide to Custom Magic Code Creation, all public API
+  declarations, source examples and a navigable offline HTML edition in the SDK.
+- Package label v1.0.7 beta 2 uses 1.0.7+beta.2 internally to retain compatibility
+  with the working code packages' minimum 1.0.7 requirement. Android versionCode
+  is 1070007. Build/package inspection is not gameplay/device acceptance.
+
+- Withdraw the atmosphere preview: remove its dynamic lighting, shadow maps,
+  enhanced/volumetric fog, light shafts and settings from the launcher, overlay
+  and Track Lab. Keep the original lighting, fog and shadows, and the existing
+  enhanced water/lava effects.
+
+## 1.0.7 — 15 October 2026
+
+### Online
+
+- Make replay-engine identities independent of Windows/Linux text line endings.
+  Identical generated code no longer looks like a different engine just because
+  it was generated on another operating system. Real content changes still fail
+  the compatibility check.
+- Compare the linked replay-engine identity during lobby admission, including
+  packages with the same public version label but different replay code.
+- Bind the prepared mod-resource fingerprint into the lobby and launch proof.
+  A downloaded source manifest alone no longer counts as a playable resource
+  match. Installed verified sources and immutable preparation caches are reused.
+- Startup exchanges explicit engine, ROM, resource, schema, checkpoint-size,
+  launch, save and epoch fields. A rejection names the component and records
+  both identities in the logs. Bounds, authentication, checkpoint integrity,
+  save isolation and the normal Loaded/Start gate remain enforced.
+- Protocol 50 and mod-transfer protocol 3 require matching 1.0.7 peers.
+- PR #60 fixes repeated/missed Quick Join channel-open callbacks and adds
+  type-correct libjuice hash callbacks through the reviewed dependency pipeline.
+- Add a remembered Hide/Show lobby-code control for streaming. This hides the
+  displayed code, not host approval or the value copied for an invited friend.
+
+### Launcher, updates and graphics
+
+- Add background startup update checks and a manual check in Play. About DKR-R
+  contains update preferences, download/install controls and recovery status.
+  Only signed metadata and verified platform packages may be installed, with
+  user approval. Published 1.0.6 needs a manual upgrade to obtain the updater.
+- Windows uses one public DKR-R.exe, with runtime/helpers stored privately in
+  libexec/dkr-r. Linux retains AppImage updates; Android uses its installer and
+  retains the existing application/signing identity.
+- Shorten launcher/overlay help, warnings and modals while keeping actionable
+  failure reasons. Remove the Connection Details and Reflection Details sections.
+- Replace ray-traced surrounding lava lighting with bounded cached scenery
+  glow. No per-frame lighting rays or extra GPU lighting pass are needed.
+  Old ray-lighting preferences migrate to the lightweight mode. The glow is
+  independent of lava surface detail and hardware reflections.
+- Lava pulses between yellow-white and orange-red without fading to black.
+  Nearby light is subtler, with lower gain, reach and caps even at high settings.
+- PR #60 adds nightly sanitizer/stress workflows, compact dependency caches,
+  CI summaries and developer documentation.
+
+See [release validation](RELEASE-VALIDATION.md) for checks and outstanding
+physical-device/WAN acceptance. Compilation is not a claim of universal
+cross-platform determinism or performance.
+
 ## 1.0.6 — 12 October 2026
 
 There's more in this update than the new lava! These changes are compared

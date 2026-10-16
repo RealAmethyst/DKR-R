@@ -62,11 +62,13 @@ def source_files() -> list[pathlib.Path]:
         pathlib.PurePosixPath("tools/blender"),
         pathlib.PurePosixPath("runtime-recomp/tests"),
         pathlib.PurePosixPath("patches"),
+        pathlib.PurePosixPath("modding"),
         pathlib.PurePosixPath("scripts"),
     )
     allowed_untracked_suffixes = {
         ".c", ".cc", ".cpp", ".h", ".hpp", ".json", ".md", ".png",
-        ".toml", ".hlsl", ".hlsli", ".in", ".ps1", ".py", ".sh", ".txt", ".patch", ".yaml", ".yml", ".cmake",
+        ".toml", ".hlsl", ".hlsli", ".in", ".inc", ".inl", ".ld", ".ps1", ".py", ".sh", ".txt", ".patch", ".yaml", ".yml", ".cmake",
+        ".java", ".kt", ".xml", ".gradle",
     }
     selected = set(tracked)
     allowed_exact_untracked = {

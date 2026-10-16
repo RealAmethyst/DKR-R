@@ -67,10 +67,17 @@ The **Ray tracing & water** section has:
   presentation rate or the reflection method.
 - **Reflections:** Sky, Screen-space or Hardware ray tracing (experimental).
 - **Racer wakes** and **Water spray**.
-- **RTX lava lighting:** its own on/off tickbox, intensity, pulse and range.
-  Turning this off leaves enhanced water, reflections and the hot lava surface on.
-  Performance uses one sixteenth as many lighting pixels as High; Balanced uses
-  one quarter and is the default. These settings do not lower the game resolution.
+- **Lava lighting:** Nearby lava glow has its own on/off tickbox. It caches
+  subtle illumination on nearby static scenery and pulses
+  it in the existing colour pass, without per-frame lighting rays or an extra
+  lighting pass. It works independently of the water reflection method.
+  The old ray-traced lava lighting mode and its quality dropdown have been
+  removed. Existing selections migrate to cached glow, retaining intensity
+  and the on/off preference. Water's hardware reflections are unchanged.
+  Intensity and range affect the surrounding glow; lava brightness affects the
+  molten surface. Pulse strength/speed blend yellow-white heat into orange-red
+  heat, never darkness; surrounding light varies gently. Turning glow off keeps the
+  enhanced surface, water and reflections.
 
 Open **Advanced water settings** to adjust:
 
@@ -93,7 +100,7 @@ The panel reports the last active reflection method and allocation fallback
 status so a hardware fallback is not mistaken for a changed saved preference.
 
 Enhanced lava has moving molten cracks, rough hot-rock islands and shaded ridges.
-That surface detail does not need the surrounding RTX lighting pass. It is a
+That surface detail does not need ray-traced scene lighting. It is a
 material effect, not extra collision geometry or a full multi-bounce path tracer.
 
 Original keeps the game's water. The enhanced presets add the new water presentation

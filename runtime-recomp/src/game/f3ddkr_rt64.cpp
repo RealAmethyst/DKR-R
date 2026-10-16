@@ -377,6 +377,8 @@ struct dkr::runtime::F3DDKRRT64Bridge::StateData {
     bool water_camera_valid = false;
     float water_time = 0.0F;
     const water::enhanced::Registry* water_registry = nullptr;
+    const water::enhanced::LavaGlowCache* lava_glow_cache = nullptr;
+    float lava_glow_step = 0;
     std::uint32_t water_camera_address = 0;
 #endif
     LocalSceneryRT64Pass* local_scenery=nullptr;
@@ -1817,6 +1819,27 @@ void dkr::runtime::F3DDKRRT64Bridge::process(RT64::Application& application,
         water::enhanced::requested_quality.load(std::memory_order_relaxed)!=water::enhanced::Quality::Original) {
         data_->water_registry=&water::enhanced::task_registry(*state,presentation::task_scene_generation());
         data_->water_time=float(presentation::task_presentation_time());
+        struct GlowTaskCache {
+            water::enhanced::LavaGlowCache cache;
+            std::uint32_t scene=~0U;
+            float current=-1,previous=-1;
+            float stepped=-1;
+            const water::enhanced::GlowGeometry* stepped_geometry=nullptr;
+        };
+        static thread_local GlowTaskCache glow;
+        const auto scene=presentation::task_scene_generation();
+        if(glow.scene!=scene || data_->water_time<glow.current) {
+            glow.scene=scene;glow.current=glow.previous=data_->water_time;
+        } else if(glow.current!=data_->water_time) {
+            glow.previous=glow.current;glow.current=data_->water_time;
+        }
+        data_->lava_glow_step=std::clamp(glow.current-glow.previous,0.0F,0.1F);
+        glow.cache.prepare(data_->water_registry->glow_geometry(),water::enhanced::lava_light_range.load());
+        if(glow.stepped!=data_->water_time || glow.stepped_geometry!=data_->water_registry->glow_geometry().get()) {
+            glow.cache.step(data_->water_time);glow.stepped=data_->water_time;
+            glow.stepped_geometry=data_->water_registry->glow_geometry().get();
+        }
+        data_->lava_glow_cache=&glow.cache;
     }
 #endif
     RT64::RSP& rsp = *state->rsp;
@@ -2965,6 +2988,25 @@ void dkr::runtime::F3DDKRRT64Bridge::Vertex(
         rsp.modelViewProjChanged = true;
     }
     rsp.setVertex(kScratchVertexAddress, count, destination);
+#if defined(DKR_ENHANCED_WATER)
+    if(data.lava_glow_cache && data.lava_glow_cache->ready() && data.water_camera_valid &&
+       !data.billboard && data.hud_widget_depth==0 && !data.shadow_scope_active) {
+        auto& draw=state->ext.workloadQueue->workloads[state->ext.workloadQueue->writeCursor].drawData;
+        for(std::uint32_t i=0;i<count;++i) {
+            const auto address=source+i*10U;
+            const water::enhanced::Vec3 point{float(ReadS16(state->RDRAM,address)),
+                float(ReadS16(state->RDRAM,address+2)),float(ReadS16(state->RDRAM,address+4))};
+            const float energy=data.lava_glow_cache->energy(address,point,data.water_time);
+            if(energy<=0)continue;
+            if(draw.lavaGlow.size()<draw.vertexCount())draw.lavaGlow.resize(draw.vertexCount(),0);
+            draw.lavaGlow[rsp.indices[destination+i]]=energy;
+            draw.lavaGlowActive=true;draw.lavaGlowTime=data.water_time;draw.lavaGlowStep=data.lava_glow_step;
+            draw.lavaGlowStrength=water::enhanced::lava_pulse_strength.load()*0.01F;
+            draw.lavaGlowSpeed=water::enhanced::lava_pulse_speed.load()*0.01F;
+            draw.lavaGlowIntensity=water::enhanced::lava_lighting.load()*0.01F;
+        }
+    }
+#endif
     if (data.hud_widget_depth != 0) {
         rsp.modelMatrixStack[data.selected_matrix] = authored_hud_matrix;
         rsp.modelViewProjChanged = true;

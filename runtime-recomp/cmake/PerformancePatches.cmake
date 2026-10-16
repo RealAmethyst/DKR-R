@@ -18,6 +18,12 @@ if(DKR_REPLAY_QUALIFICATION OR DKR_EXPERIMENTAL_RACE_TEST)
     dkr_stage_patch(librecomp "${CMAKE_BINARY_DIR}/generated/guest-cancellation" experimental-quiesced-bootstrap
         "${DKRPORT_ROOT}/patches/netplay/experimental-quiesced-bootstrap.patch" librecomp/src/recomp.cpp)
 endif()
+set(DKR_CODE_RUNTIME_INPUT "${CMAKE_BINARY_DIR}/generated/guest-cancellation")
+if(DKR_REPLAY_QUALIFICATION OR DKR_EXPERIMENTAL_RACE_TEST)
+    set(DKR_CODE_RUNTIME_INPUT "${CMAKE_BINARY_DIR}/generated/experimental-quiesced-bootstrap")
+endif()
+dkr_stage_patch(librecomp "${DKR_CODE_RUNTIME_INPUT}" custom-magic-code-heap
+    "${DKRPORT_ROOT}/patches/custom-magic-codes/runtime-code-heap.patch" librecomp/src/recomp.cpp)
 if(BUILD_TESTING AND NOT ANDROID)
     add_executable(DKRNativeGuestLifetimeTests "${DKRPORT_ROOT}/runtime-recomp/tests/native_guest_lifetime_tests.cpp")
     target_compile_definitions(DKRNativeGuestLifetimeTests PRIVATE

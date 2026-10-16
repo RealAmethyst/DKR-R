@@ -12,6 +12,7 @@ import hashlib
 import json
 from pathlib import Path
 import re
+import stage_magic_code_payload as magic_code_pipeline
 
 HEADER_HASH = "58977ed0a489f7df8b17c377a87cc6670857a5fba15af78fc7d38132fc59b33f"
 DEF = re.compile(r"RECOMP_FUNC\s+void\s+(\w+)\s*\([^{};]*\)\s*\{")
@@ -540,8 +541,13 @@ def full_scene_native_audit(dependencies_dir=None):
 # transient slot just as they already do the matching background-scroll scope.
 # Accept only these two reviewed images, not arbitrary edits after a merge.
 REVIEWED_MAIN_MERGE_HASH = {
-    "runtime-recomp/src/game/runtime_legacy_mods.cpp": "3a5da9c927c6c210f6d94f2f2e6c321959d7c5adef1f8997523aa20d173b8bbe",
-    "runtime-recomp/src/game/mods/legacy_guest_checkpoint.cpp": "00cef2c340fc0521a6fe360aef889ad4010e19537c9b85a7d1a023a652e682f6",
+    # Oct 15 Track Select repair: immutable cup menus are admitted to each
+    # explicit owner before bootstrap. Selection lives in sidecar schema 2;
+    # transient semantic cursor scopes cannot cross a checkpoint. Track Lab
+    # requests use their admitted appended IDs, not legacy retail carriers.
+    # DMA/save/character dispatch signatures and ownership remain unchanged.
+    "runtime-recomp/src/game/runtime_legacy_mods.cpp": "4dce7b77f8b86ca30a8429d14f700e060c08f134456d1a9931df77d2549842ed",
+    "runtime-recomp/src/game/mods/legacy_guest_checkpoint.cpp": "e204c7cc1dfac8205d8078b359f911e799fbdd33c4b94a351c0a37508b562094",
 }
 
 
@@ -972,7 +978,7 @@ def runtime_isolation_header(guest_names, import_names, revision):
     return isolation_header(names, (), revision)
 
 
-def generate(source_dir: Path, header_path: Path, output: Path, roots, revision, scene_cuts=False, audio_services=False, input_services=False, authored_cpu=False, isolate_symbols=False, full_scenes=False, boss_finish_diagnostics=False, rsp_source=None, mod_services=False, inline_memory=False, dependencies_dir=None):
+def generate(source_dir: Path, header_path: Path, output: Path, roots, revision, scene_cuts=False, audio_services=False, input_services=False, authored_cpu=False, isolate_symbols=False, full_scenes=False, boss_finish_diagnostics=False, rsp_source=None, mod_services=False, inline_memory=False, dependencies_dir=None, code_policy_config=None):
     source_dir, header_path, output = source_dir.resolve(), header_path.resolve(), output.resolve()
     if output.exists() or output == source_dir or source_dir in output.parents or header_path.parent in output.parents:
         raise ValueError("Probe output must be a new, separate directory; protected inputs are never rewritten")
@@ -1008,6 +1014,9 @@ def generate(source_dir: Path, header_path: Path, output: Path, roots, revision,
             functions[name] = body
             merge(declarations(body))
             origins[name] = {"file": str(file), "sha256": hashlib.sha256(body.encode()).hexdigest()}
+    # Keep protection decisions tied to the complete ordinary Patch Pipeline
+    # input, BEFORE adding checked private instrumentation/continuations.
+    code_originals=dict(functions)
     if boss_finish_diagnostics:
         functions["racer_boss_finish"] = boss_finish_diagnostic_body(functions["racer_boss_finish"], revision)
     if full_scenes:
@@ -1142,14 +1151,29 @@ def generate(source_dir: Path, header_path: Path, output: Path, roots, revision,
     private_names = '#include "isolated_symbols.h"\n' if isolate_symbols else ''
     (output / "funcs.h").write_text(private_names + (source_dir / "funcs.h").read_text(encoding="utf-8") + extra, encoding="utf-8")
     ordered = sorted(used)
+    code_policy=(magic_code_pipeline.policy_names(source_dir,revision,code_policy_config)|set(magic_code_pipeline.TRACK_OPTIONS)) if mod_services else set()
+    code_menu_fields=magic_code_pipeline.track_menu_fields(code_originals) if mod_services else ''
+    code_entries=magic_code_pipeline.entries({n:functions[n] for n in ordered},code_originals,code_policy) if mod_services else []
+    code_by_address={e['address']:e for e in code_entries}
+    code_grants={n:code_by_address[int(m[1],16)] for n in ordered if n in code_originals and
+        (m:=magic_code_pipeline.ADDRESS.search(code_originals[n])) and int(m[1],16) in code_by_address}
     checked_declarations = ['#include "recomp.h"']
     for name in sorted(blocked):
         ret, types = prototypes[name]
         checked_declarations.append(f'{ret} {name}({", ".join(types) or "void"});')
     (output / "imports.h").write_text("\n".join(checked_declarations) + "\n", encoding="utf-8")
     for index in range(0, len(ordered), 50):
+        chunks=[]
+        for n in ordered[index:index+50]:
+            body=instrument_function(n,functions[n])
+            if n in code_grants:body=magic_code_pipeline.wrap(n,body,code_grants[n]['address'],owned=True,menu_fields=code_menu_fields)
+            elif mod_services:body=magic_code_pipeline.indirect_calls(body,True)
+            chunks.append(body)
         (output / f"guest_{index // 50}.c").write_text('#include "funcs.h"\n#include "imports.h"\n' +
-            "\n".join(instrument_function(n, functions[n]) for n in ordered[index:index + 50]), encoding="utf-8")
+            (magic_code_pipeline.owned_header() if mod_services else '')+
+            "\n".join(chunks), encoding="utf-8")
+    if mod_services:
+        (output/'magic_code_dispatch.c').write_text(magic_code_pipeline.table_source(code_entries,revision,owned=True),encoding='utf-8')
     stubs = ['#include "recomp.h"', '#include "probe_bridge.h"']
     if audio_services:
         stubs.append('#include "funcs.h"')
@@ -1164,6 +1188,9 @@ def generate(source_dir: Path, header_path: Path, output: Path, roots, revision,
     (output / "manifest.json").write_text(json.dumps({"revision": revision, "roots": roots, "scene_cuts": scene_cuts, "full_scenes": full_scenes,
         "boss_finish_diagnostics": boss_finish_diagnostics,
         "owned_mod_services": mod_services,
+        "code_dispatch_schema": 2 if mod_services else 0,
+        "code_protected_policy": sorted(code_policy),
+        "code_dispatch_functions": code_entries,
         "checked_inline_memory": inline_memory,
         "owned_mod_calls": OWNED_MOD_CALLS if mod_services else {},
         "local_world_observations": full_scenes,
@@ -1206,5 +1233,6 @@ if __name__ == "__main__":
     p.add_argument("--mod-services", action="store_true", help="Reviewed private mod callback closure; session/runtime admission remains separately gated")
     p.add_argument("--rsp-source", type=Path, help="Read-only RSP input directory for an isolated worktree; original SHA-256 pins remain mandatory")
     p.add_argument("--dependencies-dir", type=Path, help="Read-only prepared extern directory; first-party sources and all SHA-256 pins remain unchanged")
+    p.add_argument("--code-policy-config",type=Path,help="Complete CPU Patch Pipeline config for code-mod protection")
     a = p.parse_args()
-    generate(a.generated, a.header, a.output, a.roots, a.revision, a.scene_cuts, a.audio_services, a.input_services, a.authored_cpu, a.isolate_symbols, a.full_scenes, a.boss_finish_diagnostics, a.rsp_source, a.mod_services, a.inline_memory, a.dependencies_dir)
+    generate(a.generated, a.header, a.output, a.roots, a.revision, a.scene_cuts, a.audio_services, a.input_services, a.authored_cpu, a.isolate_symbols, a.full_scenes, a.boss_finish_diagnostics, a.rsp_source, a.mod_services, a.inline_memory, a.dependencies_dir,a.code_policy_config)

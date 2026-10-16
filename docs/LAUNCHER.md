@@ -9,6 +9,11 @@ Open the overlay with Escape, F1 or controller Back/View. Use the D-pad/stick,
 select with A/Cross, cancel with B/Circle and change pages with LB/RB.
 Mouse input stays available.
 
+Play includes a small **Check for updates** button. Startup checks run in the
+background; downloading and installation always need your approval. Update
+preferences are in **About DKR-R → Updates**. See [Updates](UPDATES.md).
+The shorter help and dialogs are shared with the overlay too.
+
 ## Finding the settings
 
 | Tab | What belongs there |

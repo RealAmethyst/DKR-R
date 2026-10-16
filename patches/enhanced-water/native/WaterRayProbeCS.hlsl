@@ -16,9 +16,12 @@ void CSMain(uint3 id : SV_DispatchThreadID) {
         float4 now=lavaSurface(world,4,4*LAVA_WORLD_SCALE);
         float4 next=lavaSurface(world,4+1.0/120,4*LAVA_WORLD_SCALE);
         float4 evolved=lavaSurface(world,6,4*LAVA_WORLD_SCALE);
-        results[19+sample*3]=asuint(float4(lavaDisplayColor(now.rgb,0,0),now.a));
-        results[20+sample*3]=asuint(float4(lavaDisplayColor(next.rgb,0,0),next.a));
-        results[21+sample*3]=asuint(float4(lavaDisplayColor(evolved.rgb,0,0),evolved.a));
+        results[19+sample*6]=asuint(float4(lavaDisplayColor(lavaHeatPalette(now.rgb,0),0,0),now.a));
+        results[20+sample*6]=asuint(float4(lavaDisplayColor(lavaHeatPalette(next.rgb,0),0,0),next.a));
+        results[21+sample*6]=asuint(float4(lavaDisplayColor(lavaHeatPalette(evolved.rgb,0),0,0),evolved.a));
+        results[22+sample*6]=asuint(float4(lavaDisplayColor(lavaHeatPalette(now.rgb,0.35),0,0),now.a));
+        results[23+sample*6]=asuint(float4(lavaDisplayColor(lavaHeatPalette(now.rgb,1),0,0),now.a));
+        results[24+sample*6]=asuint(float4(lavaDisplayColor(lavaHeatPalette(now.rgb,1)*0.25,0,0),now.a));
         return;
     }
     RayDesc ray;

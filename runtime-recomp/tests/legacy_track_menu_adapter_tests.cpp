@@ -17,7 +17,7 @@ struct Fixture {
     Bytes memory=Bytes(MiB,0);
     TrackMenuFields fields{};
     TrackMenuAdapter adapter;
-    Fixture(bool races=true,std::vector<Root> courses=roots()):adapter(std::move(courses),races) {
+    Fixture(bool races=true,std::vector<Root> courses=roots(),std::vector<TrackMenuCup> cups={}):adapter(std::move(courses),races,std::move(cups)) {
         for(unsigned i=0;i<fields.size();++i)fields[i]=0x80001000+i*256;
         put(MenuField::FutureFunLand,65535,0,2);put(MenuField::Height,240);put(MenuField::HalfHeight,120);
         put(MenuField::PreviewCarrier,5);put(MenuField::LoadedCarrier,5);
@@ -25,7 +25,7 @@ struct Fixture {
         event(15,15);event(0);adapter.install_names(memory,0x80010000);event(1);
     }
     static std::vector<Root> roots() {
-        std::vector<Root> result(5);
+        std::vector<Root> result(7);
         for(unsigned i=0;i<result.size();++i) {
             result[i].content_id=std::string(64,'a'+i);result[i].name="CUSTOM COURSE "+std::to_string(i);
             result[i].carrier=5;result[i].vehicles=i==0?1:7;
@@ -252,8 +252,9 @@ void run() {
               "Correction rebound an accepted preview to a later stock/custom selection.");
     }
     const auto forged_scene=[&](std::string_view id,unsigned carrier,bool race) {
-        CheckpointWriter out;out.u32(1);const auto roots=Fixture::roots();out.u32(static_cast<unsigned>(roots.size()));
+        CheckpointWriter out;out.u32(2);const auto roots=Fixture::roots();out.u32(static_cast<unsigned>(roots.size()));
         for(const auto& root:roots)out.text(root.content_id,64);
+        out.u32(0);out.text({},64);
         out.u32(0x80010000);out.flag(true);out.flag(true);out.flag(false);out.flag(false);
         out.flag(!race);if(!race){out.text(id,64);out.u32(carrier);}
         out.flag(race);if(race){out.text(id,64);out.u32(carrier);}
@@ -274,7 +275,7 @@ void run() {
     quiet.event(2);check(!quiet.event(3).navigation_sound,"Back confirmation played a navigation ping");
     for(unsigned unlocked: {0U,65535U}) {
         Fixture navigation;navigation.put(MenuField::FutureFunLand,unlocked,0,2);
-        const unsigned rows=unlocked==65535?4:5;TrackMenuLayout grid(rows,5);
+        const unsigned rows=unlocked==65535?4:5;TrackMenuLayout grid(rows,7);
         navigation.real(MenuField::Y,-float((rows-1)*240));navigation.event(16);
         check(navigation.real(MenuField::Y)==-float((rows-1)*240),"Last stock world lost its correct background");
         check(navigation.event(17).backgrounds.empty(),"Custom background leaked into the last stock world");
@@ -283,14 +284,14 @@ void run() {
         check(header1!=header2 && header1 && header2,"Adjacent custom rows share a deduplicated header pointer");
         navigation.event(16);const auto backgrounds=navigation.event(17).backgrounds;
         check(backgrounds.size()==2 && backgrounds[0].texture!=backgrounds[1].texture,"Custom scrolling does not draw adjacent distinct backgrounds");
-        for(unsigned i=0;i<5;++i)for(auto direction:std::array<std::pair<int,int>,4>{{{-1,0},{1,0},{0,1},{0,-1}}}) {
+        for(unsigned i=0;i<7;++i)for(auto direction:std::array<std::pair<int,int>,4>{{{-1,0},{1,0},{0,1},{0,-1}}}) {
             auto start=grid.custom_cursor(i);navigation.select(start.row,start.column);navigation.input(direction.first,direction.second);
             const auto end=grid.move(start,direction.first,direction.second);
             check(navigation.get(MenuField::CursorY)==static_cast<unsigned>(end.row) && navigation.get(MenuField::CursorX)==static_cast<unsigned>(end.column),"Native adapter and logical grid disagree");
         }
     }
     {
-        auto courses=Fixture::roots();courses.resize(28,courses.front());
+        auto courses=Fixture::roots();courses.resize(42,courses.front());
         for(unsigned i=0;i<courses.size();++i) {
             courses[i].content_id=std::string(62,'a')+"0123456789abcdef"[i/16]+"0123456789abcdef"[i%16];
         }
@@ -306,6 +307,32 @@ void run() {
         }
         check(textures[0]==textures[6] && textures[0]!=textures[5],"Six custom images do not cycle per logical row");
         rows.event(16);rows.put(MenuField::VertexFlip,2);rejects([&]{rows.event(17);});
+    }
+    {
+        const std::string cup_id(64,'9'),asset_id(64,'a');
+        Fixture cups(true,Fixture::roots(),{{cup_id,"MY CUP",{asset_id,5},2}});
+        // Seven courses occupy two rows. Cups begin on a fresh third row.
+        cups.select(6,0);cups.event(6,5);cups.event(7,0,1);
+        const auto preview=cups.event(8,5);
+        check(preview.scene&&preview.scene->id==asset_id,"Cup preview leaked its menu identity into asset routing");
+        cups.put(MenuField::Type,1);cups.put(MenuField::SelectedX,0);
+        const auto stock_grid=cups.get(MenuField::StockIDs);
+        cups.event(20);check(cups.get(MenuField::CursorX)==4,"Cup options did not borrow trophy semantics");
+        rejects([&]{cups.adapter.checkpoint();});
+        cups.event(12,2);cups.put(MenuField::Type,2);cups.event(21);
+        check(cups.adapter.selected_cup()==cup_id,"Confirmation lost the explicit cup identity");
+        check(cups.get(MenuField::CursorX)==4&&cups.get(MenuField::CursorY)==0,"Cup load used an out-of-range native world");
+        cups.event(15,20);cups.event(23);
+        check(cups.get(MenuField::CursorX)==0&&cups.get(MenuField::CursorY)==6,"Cup load lost the logical cursor");
+        check(cups.get(MenuField::StockIDs)==stock_grid,"Cup selection wrote native track IDs");
+        const auto saved=cups.adapter.checkpoint();
+        check(cups.adapter.stage_checkpoint(saved).selected_cup()==cup_id,"Cup selection did not rewind");
+        cups.event(15,15);check(cups.adapter.selected_cup().empty(),"Custom cup followed a return to native tracks");
+        Fixture sixth;sixth.select(4,5);sixth.put(MenuField::Type,1);sixth.event(20);
+        check(sixth.get(MenuField::CursorX)==0,"Sixth custom track became a native challenge");
+        sixth.event(12,2);sixth.put(MenuField::Type,2);sixth.event(21);
+        check(sixth.get(MenuField::CursorX)==0,"Custom track became a trophy at the parent's load decision");
+        sixth.event(23);check(sixth.get(MenuField::CursorX)==5,"Sixth custom-track cursor was not restored");
     }
     {
         // Production callback order is bgdraw_render(&gCurrDisplayList),

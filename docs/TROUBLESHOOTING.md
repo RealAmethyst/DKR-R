@@ -58,6 +58,13 @@ delay/window, enabled mods, scene, and whether the overlay responds.
 Don't publish private codes or profile keys.
 See [Online](ONLINE_MULTIPLAYER.md) for direct-routing limits.
 
+In 1.0.7, a compatibility failure names its component. A replay-engine mismatch
+usually means different builds, even if filenames look similar. Prepared-mod
+mismatches need the host's exact verified resources, not just matching names.
+Checkpoint size/schema, launch, save and epoch failures need paired logs for
+diagnosis; don't delete offline saves or bypass the check. Use the complete
+same release on Windows and Linux/SteamOS before retrying.
+
 ## Graphics or uneven presentation
 
 First compare the same scene offline at 60 FPS. Temporarily disable enhanced

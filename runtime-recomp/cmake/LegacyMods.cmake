@@ -188,6 +188,8 @@ add_library(DKRLegacyImportLibrary STATIC "${_dkr_mod_src}/legacy_import_library
     "${_dkr_mod_src}/legacy_mod_library.cpp"
     "${_dkr_mod_src}/legacy_track_catalog.cpp")
 target_link_libraries(DKRLegacyImportLibrary PUBLIC DKRLegacyModCore DKRLegacyModProcess)
+target_include_directories(DKRLegacyImportLibrary PRIVATE
+    "${DKR_DEPENDENCIES_DIR}/n64-modern-runtime/N64Recomp/include")
 
 add_library(DKRLegacyModLaunch STATIC "${_dkr_mod_src}/legacy_mod_launch.cpp"
     "${_dkr_mod_src}/online_mod_runtime.cpp"

@@ -9,9 +9,11 @@
 #include "render/WaterRayScene.h"
 #include "render/WaterProjection.h"
 #include "render/WaterBounds.h"
+#include "render/LavaLightingBounds.h"
 #include "render/rt64_water_renderer.h"
 #include "render/rt64_render_target.h"
 #include "render/rt64_descriptor_sets.h"
+#include "render/rt64_rsp_processor.h"
 #include "render/WaterPipelineSafety.h"
 #include "shared/rt64_raster_params.h"
 #include "shared/rt64_frame_params.h"
@@ -603,7 +605,7 @@ void resourceProbe(RT64::RenderWorker& worker,plume::RenderShaderFormat format,c
                water.scenes[modern].lavaWidth!=640 || water.scenes[modern].lavaHeight!=360)
                 throw std::runtime_error("1440p bounded lava lighting preparation failed");
             auto* prepared=water.scenes[modern].lavaLight.get();
-            moltenDraw.material.shoreCounts[0].x=1;
+            moltenDraw.material.shoreCounts[0].x=16;
             if(water.prepareLavaLighting(&worker,modern,moltenDraw) ||
                water.scenes[modern].lavaLight.get()!=prepared)
                 throw std::runtime_error("Live lava quality change invalidated an earlier prepared batch");
@@ -766,7 +768,7 @@ void captureProbe(RT64::RenderWorker& worker,plume::RenderShaderFormat format,co
 void lavaDrawProbe(RT64::RenderWorker& worker,plume::RenderShaderFormat format,const RT64::ShaderLibrary* library) {
     using namespace RT64;
     if(!worker.device->getCapabilities().rayQuery)return;
-    for(uint32_t samples:{1u,4u}) for(uint32_t divisor:{1u,2u,4u}) for(float receiverDepth:{0.25f,0.99985f}) {
+    for(uint32_t samples:{1u,4u}) for(uint32_t divisor:{4u,8u,16u}) for(float receiverDepth:{0.25f,0.99985f}) {
         if(!(worker.device->getSampleCountsSupported(RenderTarget::colorBufferFormat(false))&samples))continue;
         RenderMultisampling ms;ms.sampleCount=samples;
         RenderTarget color(0,Framebuffer::Type::Color,ms,false),depth(0,Framebuffer::Type::Depth,ms,false);
@@ -786,6 +788,7 @@ void lavaDrawProbe(RT64::RenderWorker& worker,plume::RenderShaderFormat format,c
         draw.screen={16,16,16,16};draw.screenTransform={1,1,0,0};draw.viewBounds={0,0,16,16};
         draw.viewportScale={8,8,1,16};draw.viewportTranslate={8,8,0,16};
         draw.inverseViewProjection=hlslpp::float4x4::identity();
+        draw.viewProjection=hlslpp::float4x4::identity();
         water.draws={draw};water.drawScenes={scene};
         if(!water.prepareLavaLighting(&worker,scene,draw))throw std::runtime_error("No bounded lava lighting field");
         if(water.scenes[scene].lavaWidth!=16/divisor || water.scenes[scene].lavaHeight!=16/divisor)
@@ -888,10 +891,103 @@ int main(int argc,char** argv) {
         if(!worker.commandQueue || !worker.commandList || !worker.commandFence)throw std::runtime_error("No headless command resources");
         waterfallDrawProbe(worker,format,api.get());
         projectionProbe(worker,format);
+        {
+            interop::WaterDrawParams d{};
+            d.viewProjection=hlslpp::float4x4::identity();d.screen={320,240,640,480};
+            d.viewportScale={160,120,1,640};d.viewportTranslate={160,120,0,480};
+            d.screenTransform={1,1,0,0};d.viewBounds={0,0,640,480};
+            d.material.skyColor.w=1;d.material.shoreSegments[0]={0,0,0,100};
+            auto bounds=lavaLightingBounds(d);
+            if(bounds!=std::array<float,4>{0,0,640,480})throw std::runtime_error("Nearby lava influence was clipped");
+            d.material.shoreSegments[0].x=100000;
+            bounds=lavaLightingBounds(d);
+            if(bounds[2]>bounds[0])throw std::runtime_error("Offscreen lava influence was not culled");
+            d.material.shoreSegments[0].x=0;d.screenTransform={0.65F,0.8F,0.2F,-0.1F};
+            d.viewportScale.w=2560;d.viewportTranslate.w=1440;d.viewBounds={20,30,2540,1400};
+            bounds=lavaLightingBounds(d);
+            if(bounds!=std::array<float,4>{20,30,2540,1400})throw std::runtime_error("Wide/aspect-adjusted influence lost coverage");
+            std::puts("PASS: conservative local-light bounds: nearby, offscreen, viewport offsets and aspect transforms.");
+        }
         ShaderLibrary library(false,false);library.setupCommonShaders(api.get(),device.get());
         resourceProbe(worker,format,&library);
         captureProbe(worker,format,&library);
         lavaDrawProbe(worker,format,&library);
+        {
+            // Exercise the actual production RSP colour shader and descriptor
+            // ABI, not an isolated approximation of the new arithmetic.
+            std::fprintf(stderr,"[test][glow] production RSP stream begin\n");
+            if(!library.rspProcess.pipeline)throw std::runtime_error("Production RSP pipeline/constant ABI invalid");
+            Workload workload{};workload.reset();
+            auto& draw=workload.drawData;
+            constexpr unsigned vertices=65536;
+            draw.posFloats.resize(vertices*3,0);draw.velFloats.resize(vertices*3,0);
+            draw.tcFloats.resize(vertices*2,0);draw.tcVelFloats.resize(vertices*2,0);
+            draw.normColBytes.resize(vertices*4,100);
+            for(unsigned i=0;i<vertices;++i)draw.normColBytes[i*4+3]=255;
+            draw.viewProjIndices.resize(vertices,0);draw.worldIndices.resize(vertices,0);
+            draw.fogIndices.resize(vertices,0);draw.lightIndices.resize(vertices,0);
+            draw.lightCounts.resize(vertices,0);draw.lookAtIndices.resize(vertices,0);
+            draw.rspFog.emplace_back();draw.rspLights.emplace_back();draw.rspLookAt.emplace_back();
+            draw.lavaGlow.resize(vertices,0.14F);draw.lavaGlowActive=true;
+            draw.lavaGlowStrength=0;draw.lavaGlowIntensity=1;
+            BufferUploader uploader(device.get());
+            workload.updateDrawDataRanges();workload.uploadDrawData(&worker,&uploader);uploader.wait();
+            workload.updateOutputBuffers(&worker);
+            std::fprintf(stderr,"[test][glow] uploads and output buffers prepared\n");
+            RSPProcessor processor(device.get());
+            processor.process({&worker,&draw,&workload.drawBuffers,&workload.outputBuffers,0,1});
+            std::fprintf(stderr,"[test][glow] descriptors prepared\n");
+            auto readback=required(device->createBuffer(RenderBufferDesc::ReadbackBuffer(16)));
+            auto timer=device->getCapabilities().queryPools ? device->createQueryPool(4) : nullptr;
+            worker.commandList->begin();
+            uploader.commandListBeforeBarriers(&worker);uploader.commandListCopyResources(&worker);uploader.commandListAfterBarriers(&worker);
+            processor.recordCommandList(&worker,&library,&workload.outputBuffers);
+            worker.commandList->barriers(RenderBarrierStage::COPY,RenderBufferBarrier(workload.outputBuffers.shadedColBuffer.buffer.get(),RenderBufferAccess::READ));
+            worker.commandList->copyBufferRegion(readback->at(0),workload.outputBuffers.shadedColBuffer.buffer->at(0),16);
+            worker.commandList->end();worker.execute();worker.wait();
+            std::fprintf(stderr,"[test][glow] colour dispatch completed\n");
+            requireNoD3D12Errors(device.get(),format);
+            const auto* rgba=static_cast<const float*>(readback->map());
+            if(!rgba || rgba[0]<=rgba[1] || rgba[1]<=rgba[2] || rgba[3]!=1)
+                throw std::runtime_error("Production cached lava glow colour/fog stream failed");
+            const float base=100.0f/255;
+            if(rgba[0]>base*1.141f || rgba[1]>base*1.028f || rgba[2]>base*1.003f)
+                throw std::runtime_error("Default lava glow exceeds subtle colour budget");
+            readback->unmap();
+            for(unsigned state=0;state<3;++state) {
+                processor.processCB.lavaGlowScale=state==2 ? 0 : 3;
+                processor.processCB.lavaGlowCooling=state==1 ? 1 : 0;
+                worker.commandList->begin();
+                processor.recordCommandList(&worker,&library,&workload.outputBuffers);
+                worker.commandList->barriers(RenderBarrierStage::COPY,RenderBufferBarrier(workload.outputBuffers.shadedColBuffer.buffer.get(),RenderBufferAccess::READ));
+                worker.commandList->copyBufferRegion(readback->at(0),workload.outputBuffers.shadedColBuffer.buffer->at(0),16);
+                worker.commandList->end();worker.execute();worker.wait();
+                const auto* pixel=static_cast<const float*>(readback->map());
+                if(!pixel || pixel[3]!=1 || pixel[0]>base*1.181f ||
+                   pixel[1]>base*1.035f || pixel[2]>base*1.003f ||
+                   (state==1 && pixel[1]>base*1.014f) ||
+                   (state==2 && (std::abs(pixel[0]-base)>0.00001f || std::abs(pixel[1]-base)>0.00001f || std::abs(pixel[2]-base)>0.00001f)))
+                    throw std::runtime_error("Lava glow maximum intensity, cooling colour or exact off regression");
+                readback->unmap();
+            }
+            processor.processCB.lavaGlowCooling=0;
+            double totals[2]={};
+            for(unsigned frame=0;frame<40 && timer;++frame) {
+                worker.commandList->begin();worker.commandList->resetQueryPool(timer.get(),0,4);
+                for(unsigned mode=0;mode<2;++mode) {
+                    processor.processCB.lavaGlowScale=float(mode);
+                    worker.commandList->writeTimestamp(timer.get(),mode*2);
+                    processor.recordCommandList(&worker,&library,&workload.outputBuffers);
+                    worker.commandList->writeTimestamp(timer.get(),mode*2+1);
+                }
+                worker.commandList->end();worker.execute();worker.wait();timer->queryResults();
+                const auto* times=timer->getResults();
+                if(frame>=8)for(unsigned mode=0;mode<2;++mode)
+                    totals[mode]+=double(times[mode*2+1]-times[mode*2])/1000000.0;
+            }
+            std::printf("PASS: actual RSP cached glow, unchanged alpha, zero lighting rays/passes; %u vertices GPU off=%.4f ms on=%.4f ms incremental=%.4f ms.\n",
+                vertices,totals[0]/32,totals[1]/32,(totals[1]-totals[0])/32);
+        }
         fieldProbe(worker,format);
         // Validate the actual wake shader/pipeline with the portable constant
         // range even when this device cannot execute hardware ray queries.
@@ -925,7 +1021,7 @@ int main(int argc,char** argv) {
         shader=required(device->createShader(WaterRayProbeCSBlobSPIRV,sizeof(WaterRayProbeCSBlobSPIRV),"CSMain",format));
         auto pipeline=required(device->createComputePipeline(RenderComputePipelineDesc(layout.get(),shader.get(),4,1,1)));
         constexpr uint32_t lavaSamples=128*128;
-        constexpr uint32_t bytes=(19+lavaSamples*3)*4*sizeof(uint32_t);
+        constexpr uint32_t bytes=(19+lavaSamples*6)*4*sizeof(uint32_t);
         auto gpu=required(device->createBuffer(RenderBufferDesc::DefaultBuffer(bytes,RenderBufferFlag::STORAGE|RenderBufferFlag::UNORDERED_ACCESS)));
         auto cpu=required(device->createBuffer(RenderBufferDesc::ReadbackBuffer(bytes)));
         output.setBuffer(output.output,gpu.get(),RenderBufferStructuredView(16));
@@ -998,10 +1094,12 @@ int main(int argc,char** argv) {
             if(pass==0 && argc>2) {
                 preview.open(argv[2],std::ios::binary);
                 if(!preview)throw std::runtime_error("Cannot open headless lava preview");
-                preview<<"P6\n128 128\n255\n";
+                // Hot and cool endpoints at the SAME world positions/time,
+                // followed by minimum-brightness cool lava.
+                preview<<"P6\n128 512\n255\n";
             }
             for(unsigned sample=0;sample<lavaSamples;sample++) {
-                const auto offset=(19+sample*3)*4;
+                const auto offset=(19+sample*6)*4;
                 std::array<float,3> color{};
                 for(unsigned i=0;i<3;i++) {
                     const float now=std::bit_cast<float>(values[offset+i]);
@@ -1019,19 +1117,39 @@ int main(int argc,char** argv) {
                 hot+=color[1]>0.90f && color[2]>0.65f;
                 minGreen=std::min(minGreen,color[1]);maxGreen=std::max(maxGreen,color[1]);
                 if(color[0]<color[1] || color[1]<color[2])throw std::runtime_error("Lava pool lost its hot yellow-orange palette");
+                // Test the production palette function at the full cool
+                // endpoint, including minimum surface brightness. The old
+                // one-point/base-surface tests missed the fade-to-black bug.
+                for(unsigned phase=3;phase<6;++phase) {
+                    const float r=std::bit_cast<float>(values[offset+phase*4]);
+                    const float g=std::bit_cast<float>(values[offset+phase*4+1]);
+                    const float b=std::bit_cast<float>(values[offset+phase*4+2]);
+                    const float linearHot=std::pow(color[0],2.2f);
+                    const float redEmission=linearHot/std::max(0.00001f,1-linearHot);
+                    const float retainedRed=redEmission*(phase==3 ? 0.972f : 0.92f)*(phase==5 ? 0.25f : 1);
+                    const float expectedRed=std::pow(retainedRed/(1+retainedRed),1.0f/2.2f);
+                    if(!std::isfinite(r) || !std::isfinite(g) || !std::isfinite(b) ||
+                       r<0.25f || g<=0 || b<=0 || r>1 || g>r || b>g || std::abs(r-expectedRed)>0.0002f)
+                        throw std::runtime_error("Lava palette endpoint goes black or loses warm self-emission");
+                    if(phase==4 && g>=color[1]*0.85f)
+                        throw std::runtime_error("Cooling lava fails to change from yellow-white to orange-red");
+                }
             }
+            if(preview.is_open())for(unsigned phase:{3u,4u,5u})for(unsigned sample=0;sample<lavaSamples;++sample)
+                for(unsigned channel=0;channel<3;++channel)
+                    preview.put(static_cast<char>(std::lround(std::bit_cast<float>(values[(19+sample*6+phase)*4+channel])*255)));
             // The previous dark-crust material passed a one-point spectrum
             // test. Require molten coverage, bright cores and spatial detail.
             if(pass==0)std::printf("Lava pool: mean brightness=%.3f bright=%.1f%% white-hot=%.1f%% dark=%.1f%% max-frame-step=%.4f evolution=%.4f\n",
                 meanLight,100.0f*bright/lavaSamples,100.0f*hot/lavaSamples,100.0f*dark/lavaSamples,maxStep,meanEvolution);
             if(maxStep>0.06f)std::fprintf(stderr,"Lava worst step at grid %u,%u component=%u: now=%g next=%g\n",
-                worstSample%128,worstSample/128,worstComponent,std::bit_cast<float>(values[(19+worstSample*3)*4+worstComponent]),
-                std::bit_cast<float>(values[(20+worstSample*3)*4+worstComponent]));
+                worstSample%128,worstSample/128,worstComponent,std::bit_cast<float>(values[(19+worstSample*6)*4+worstComponent]),
+                std::bit_cast<float>(values[(20+worstSample*6)*4+worstComponent]));
             if(meanLight<0.78f || bright<lavaSamples*0.80f || hot<lavaSamples*0.02f || dark>lavaSamples*0.02f ||
                 maxGreen-minGreen<0.12f || maxStep>0.06f || meanEvolution<0.015f)
                 throw std::runtime_error("Lava pool brightness, molten coverage, detail or continuous convection regression");
         }
-        std::puts("PASS: real GPU molten lava shading: bright pool coverage, white-hot cores, spatial detail, smooth convection and distant filtering.");
+        std::puts("PASS: real GPU molten lava shading: yellow-white/orange-red endpoints remain emissive even at minimum brightness; bright cores, relief and continuous convection preserved.");
         std::puts("PASS: real GPU lava lighting: static occlusion, unblocked illumination, bounded smooth pulse and zero-intensity off.");
         std::puts("PASS: real GPU ray hit/miss, transparent waterfall rejection, opaque-liquid hit, continuous film, static reuse and scene replacement; no gameplay or FPS claim.");return 0;
     } catch(const std::exception& error) {std::fprintf(stderr,"FAIL: %s\n",error.what());return 1;}

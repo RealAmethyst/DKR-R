@@ -24,7 +24,12 @@ inline void add_lava_emitter(std::vector<LavaEmitter>& emitters, LavaEmitter val
     emitters[a][3]=std::min(1200.0F,std::sqrt(wa+wb));
     emitters.erase(emitters.begin()+b);
 }
+inline float lava_cooling(float seconds, float strength, float speed) {
+    return std::clamp(strength,0.0F,1.0F)*0.5F*(1.0F-std::sin(seconds*speed*1.7F));
+}
 inline float lava_pulse(float seconds, float strength, float speed) {
-    return 1.0F-std::clamp(strength,0.0F,1.0F)*0.5F*(1.0F-std::sin(seconds*speed*1.7F));
+    // The surface changes heat palette, never fades out. Nearby light only
+    // breathes gently, including at maximum pulse strength.
+    return 1.0F-0.2F*lava_cooling(seconds,strength,speed);
 }
 }

@@ -1,4 +1,5 @@
 #include "runtime_texture_packs.hpp"
+#include "application_layout.hpp"
 #include "startup_performance.hpp"
 
 #include "rice_texture_pack_policy.hpp"
@@ -1516,7 +1517,11 @@ void apply_pending(RT64::Application& application, bool modern_profile) {
         // Keep it installed in both presentation styles and after user packs,
         // without changing their enabled states or priority ordering.
         if(char* base=SDL_GetBasePath()) {
-            const auto builtin=std::filesystem::path(base)/"assets/ui/CustomTrackBackgrounds";
+            auto directory=std::filesystem::u8path(base);
+#if defined(_WIN32)
+            directory=dkr::runtime::layout::windows_application_directory(directory/"DKR-R-Runtime.exe");
+#endif
+            const auto builtin=directory/"assets/ui/CustomTrackBackgrounds";
             SDL_free(base);std::error_code error;
             if(std::filesystem::is_regular_file(builtin/"rt64.json",error))replacements.emplace_back(builtin);
         }

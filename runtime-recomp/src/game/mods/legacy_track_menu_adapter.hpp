@@ -9,6 +9,9 @@ enum class MenuField : unsigned {
 };
 using TrackMenuFields=std::array<std::uint32_t,static_cast<unsigned>(MenuField::Count)>;
 struct TrackSceneChoice {std::string id;unsigned carrier=0;};
+// Menu identity is distinct from the first course's asset identity. Several
+// cups may preview the same course without aliasing their selection.
+struct TrackMenuCup {std::string id,name;TrackSceneChoice preview;unsigned vehicle=0;};
 struct TrackMenuEffect {
     bool override_return=false;
     bool navigation_sound=false;
@@ -27,7 +30,8 @@ void append_track_background_quad(std::span<std::uint8_t> guest,
 // The bridge serializes each event and handles scene requests after unlocking.
 class TrackMenuAdapter {
 public:
-    explicit TrackMenuAdapter(std::vector<Root> tracks,bool allow_races=false);
+    explicit TrackMenuAdapter(std::vector<Root> tracks,bool allow_races=false,std::vector<TrackMenuCup> cups={});
+    const std::string& selected_cup()const{return selected_cup_;}
     const Bytes& name_bytes()const{return names_;}
     bool needs_names()const{return name_address_==0;}
     void install_names(std::span<std::uint8_t> guest,std::uint32_t address);
@@ -37,6 +41,10 @@ public:
     TrackMenuAdapter stage_checkpoint(View)const;
 private:
     std::vector<Root> tracks_;
+    std::vector<TrackMenuCup> cups_;
+    std::string selected_cup_;
+    struct OptionScope {unsigned event;TrackCursor cursor;std::uint32_t selected_x;};
+    std::vector<OptionScope> options_;
     Bytes names_;
     std::vector<std::size_t> name_offsets_;
     std::vector<std::size_t> header_offsets_;

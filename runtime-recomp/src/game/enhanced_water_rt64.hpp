@@ -29,18 +29,20 @@ inline const Registry& task_registry(RT64::State& state,std::uint32_t scene) {
     static thread_local Cache cache;
     Memory m(std::span<const std::uint8_t>(state.RDRAM,0x800000));
     const auto model=m.u32(level_model_symbol());
-    const bool rays=requested_reflection.load(std::memory_order_relaxed)==Reflection::Hardware &&
-        reflection_strength.load(std::memory_order_relaxed)>0 &&
-        hardware_ray_capability.load(std::memory_order_relaxed)==1;
+    const bool lighting=lava_lighting_enabled.load()!=0 && lava_lighting.load()>0;
+    const bool glow=lighting;
+    const bool rays=hardware_ray_capability.load(std::memory_order_relaxed)==1 &&
+        requested_reflection.load(std::memory_order_relaxed)==Reflection::Hardware &&
+        reflection_strength.load(std::memory_order_relaxed)>0;
     const std::array<std::uint32_t,6> key{scene,model,m.u32(revision_addresses::TextureCache),
-        m.u32(revision_addresses::NumberOfLoadedTextures),m.u32(wave_batch_symbol()),rays ? 1U : 0U};
+        m.u32(revision_addresses::NumberOfLoadedTextures),m.u32(wave_batch_symbol()),(rays ? 1U : 0U)|(glow ? 2U : 0U)};
     const auto revision=revision_addresses::selected_revision();
     const auto scrolls=texture_scrolls(m,m.u32(revision_addresses::ObjectList),m.u32(revision_addresses::ObjectCount));
     if(cache.key!=key || cache.revision!=revision || cache.scrolls!=scrolls) {
         const bool preserve_flow_phase=cache.key[0]==scene && cache.key[1]==model && cache.revision==revision;
         cache.key=key;cache.revision=revision;cache.scrolls=scrolls;
         cache.registry.rebuild(m,key[1],key[2],key[3],key[4],
-            legacy::renderer_water_for_level(static_cast<std::int32_t>(m.u32(revision_addresses::CurrentMapId))),rays,preserve_flow_phase,scrolls);
+            legacy::renderer_water_for_level(static_cast<std::int32_t>(m.u32(revision_addresses::CurrentMapId))),rays,preserve_flow_phase,scrolls,glow);
         if(key[4] && cache.trace_lines<64) {
             ++cache.trace_lines;
             const auto symbols=wave_symbols(revision==rom::Revision::UsV80);
@@ -177,13 +179,19 @@ inline void apply_material(RT64::State& state, const Registry& registry,
                 const interop::float4 light{e[0],e[1],e[2],e[3]};
                 material.shoreSegments[i]=light;
             }
-            material.sunDirection.w=lava_lighting_enabled.load() ? scale(lava_lighting) : 0.0F;
+            // Nearby glow is cached on native scenery. Never schedule the
+            // old viewport-wide ray/capture/composite lighting pass, even
+            // when an older settings file requested ray-traced lighting.
+            material.sunDirection.w=0;
+            material.shoreCounts[0].y=reflection==Reflection::Hardware ? 1.0F : 0.0F;
+            material.shoreCounts[0].z=scale(lava_surface_brightness);
+            if(reflection==Reflection::Sky)material.appearance.x=0;
             material.sunColor.w=scale(lava_pulse_strength);
             material.skyColor.w=scale(lava_light_range);
             material.optics.y=scale(lava_pulse_speed);
             // Lava has no shoreline field. Carry the immutable per-draw
             // lighting sample divisor in an otherwise unused field.
-            material.shoreCounts[0].x=float(4U >> std::clamp(lava_lighting_quality.load(),0,2));
+            material.shoreCounts[0].x=float(16U >> std::clamp(lava_lighting_quality.load(),0,2));
         }
     }
     if(dynamic) {

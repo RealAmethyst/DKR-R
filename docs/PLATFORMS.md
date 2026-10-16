@@ -4,7 +4,7 @@ We're keeping Windows and Linux together. Linux releases must include an
 AppImage, not just a loose executable. Android and Linux ARM64 have separate
 ports, and macOS now has a source/build workflow.
 
-1.0.6 release packaging targets (12 October 2026):
+1.0.7 release packaging targets (15 October 2026):
 
 | Platform | Current delivery | Important limits |
 |---|---|---|
@@ -12,7 +12,7 @@ ports, and macOS now has a source/build workflow.
 | Linux x86_64 | Public AppImage | Requires glibc 2.38+ and a working compatible Vulkan driver. |
 | Linux ARM64 | ARM64 AppImage | Needs glibc 2.38+, compatible 64-bit Linux/Vulkan and physical-device qualification. Cross-build and QEMU checks are not a physical GPU test. |
 | Steam Deck | Linux x86_64 AppImage payload | A separate named artifact, not a different engine build. SteamOS/controller integration needs a physical-device check. |
-| Android ARM64 | APK, code 1060002 | Android 9+, ARM64 OS and compatible Vulkan features are required. Startup, driver behaviour and sustained performance vary; desktop parity is not established. Existing app ID/signature are retained. |
+| Android ARM64 | APK, code 1070001 | Android 9+, ARM64 OS and compatible Vulkan features are required. Startup, driver behaviour and sustained performance vary; desktop parity is not established. Existing app ID/signature are retained. |
 | macOS | Source/build-kit support | Requires an Apple build host. No newly qualified macOS binary is included in this delivery; integrated Experimental Rollback is currently gated out on Apple. |
 | iOS | Merged sideload source port | Contributor validation is recorded separately. No newly built IPA is supplied in this pass. |
 

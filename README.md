@@ -8,16 +8,47 @@
   </a>
 </p>
 
-DKR-R 1.0.6 is here! There's been a lot going on since the last update.
-We've got new lava, more control over the water, tidier custom Track Select
-rows and more fixes alongside all the custom tracks, characters and online
-mod sharing from 1.0.5.
+DKR-R 1.0.7 brings clearer online compatibility checks, built-in update checks
+and a much lighter lava glow. The launcher and overlay have had a tidy-up too.
+
+The current development package is **v1.0.7 beta 2**. It adds Custom Magic Codes,
+Custom Trophy Races and AI & Boss Difficulty, with a controller-first cup editor
+and cup sharing. Start with the [player guide](modding/USER-GUIDE.txt), or the
+[Modders Guide to Custom Magic Code Creation](modding/MODDERS-GUIDE.txt) to make
+your own. The SDK includes a navigable offline HTML edition too.
 
 DKR-R is a native static recompilation of Diddy Kong Racing. Bring your own
 legally obtained US v1.0 or US Rev A/v1.1 ROM; no game ROM or extracted
 Nintendo/Rare assets are included.
 
-## What's new in 1.0.6
+## What's new in 1.0.7
+
+- Fix a cross-platform compatibility trap where Windows and Linux line endings
+  could give identical replay code different online identities.
+- Online checks the replay engine before joining and compares the actual
+  prepared mod resources before admitting a client. Startup errors name the
+  mismatched part instead of reporting one catch-all error. Everyone in a
+  lobby needs 1.0.7; don't mix these packages with 1.0.6.
+- The launcher checks GitHub for updates in the background. There is also a
+  **Check for updates** button in Play and update controls in About DKR-R.
+  Downloads are verified and installation needs your approval. Updates need
+  signed release metadata; an ordinary GitHub ZIP alone is not an update offer.
+- On Windows, **DKR-R.exe** is the only application to launch. The runtime and
+  helpers stay in `libexec/dkr-r`; keep the complete package together.
+- Nearby lava glow uses cached scenery colours, not a full-screen ray-traced
+  lighting pass. The pulse stays hot, blending yellow-white with orange-red
+  instead of black. Glow has its own on/off and intensity controls; hardware
+  reflections are separate and can still be demanding.
+- Launcher and overlay wording is shorter and more consistent. Unnecessary
+  connection/reflection detail sections have been removed. Streamers can
+  hide the lobby code without changing the code shared by Copy.
+- PR #60 adds repeatable nightly/stress checks, compact dependency caches,
+  a reviewed libjuice callback fix and safer Quick Join channel opening.
+
+See the [changelog](CHANGELOG.md), [online guide](docs/ONLINE_MULTIPLAYER.md)
+and [release validation](RELEASE-VALIDATION.md) for the details and test coverage.
+
+## Carried forward from 1.0.6
 
 - Skip intro logos in Play, then choose Start menu or Character select. The
   Start menu keeps its opening sequence and music. Online startup stays unchanged.
@@ -30,11 +61,9 @@ Nintendo/Rare assets are included.
   quality controls. Fine-tune reflection strength/range, roughness, ripples,
   foam, clarity, refraction, waterfall detail and water tint. Presets leave
   your game resolution, MSAA, FPS target and reflection method alone.
-- Hot Top Volcano has enhanced, glowing lava with moving molten cracks and
-  rough hot-rock detail. Optional RTX lava lighting adds a pulsating glow to
-  nearby walls and ground. Its own tickbox leaves the enhanced surface and
-  water effects on; quality, intensity, pulse and range settings control the
-  surrounding light. Lower-resolution lighting reduces the ray workload.
+- Hot Top Volcano has enhanced lava with moving molten cracks and rough
+  hot-rock detail. Version 1.0.7 replaces its costly surrounding lighting with
+  the lighter glow described above; surface detail and reflections stay separate.
 - Every custom Track Select row now has a CUSTOM TRACKS header and cycles
   through six backgrounds. Future Fun Land restores its own artwork when you
   scroll back. Images, names and arrows stay with their wooden frames on wide
@@ -58,7 +87,7 @@ Nintendo/Rare assets are included.
 - Contributor work adds safer dependency setup, build locking and packaging,
   improved macOS support, and an iOS sideload source port. Apple binaries are
   not part of this delivery. Windows, both Linux architectures, Steam Deck and
-  Android share the same 1.0.6 release source.
+  Android use the same release source.
 - Developers now have a regression/performance harness with retained reports,
   private retail replay checks, repeatable build presets, faster incremental
   builds and CI caching, workflow linting and mobile compilation checks.
@@ -175,11 +204,11 @@ review them before sharing. See [troubleshooting](docs/TROUBLESHOOTING.md).
 
 The current Public Build packages are:
 
-- `DKR-R-1.0.6-Windows-x64.zip`
-- `DKR-R-1.0.6-Linux-x86_64.AppImage`
-- `DKR-R-1.0.6-Linux-aarch64.AppImage`
-- `DKR-R-1.0.6-SteamDeck-x86_64.AppImage` (same Linux payload)
-- `DKR-R-1.0.6-Android-arm64.apk` (Android 9+, ARM64)
+- `DKR-R-1.0.7-Windows-x64.zip`
+- `DKR-R-1.0.7-Linux-x86_64.AppImage`
+- `DKR-R-1.0.7-Linux-aarch64.AppImage`
+- `DKR-R-1.0.7-SteamDeck-x86_64.AppImage` (same Linux payload)
+- `DKR-R-1.0.7-Android-arm64.apk` (Android 9+, ARM64)
 - `track_lab.zip` for Blender.
 
 ARM, Android and Steam Deck still need physical-device checks. Release numbering
@@ -197,6 +226,12 @@ complete release. Never hand-edit submodules or generated recompilation files.
 
 ## Documentation
 
+Background GitHub release checks are available under **About DKR-R → Updates**,
+with a manual check in Play, verified downloads and user-approved installation.
+Your saves, mods and portable data stay in place. Published v1.0.6 needs one
+manual upgrade to get this feature. See [Updates](docs/UPDATES.md) for supported
+install routes, recovery and release-signing requirements.
+
 The [documentation index](docs/README.md) separates player guides, modding,
 development, proposals and historical investigations.
 [Release validation](RELEASE-VALIDATION.md) records what was checked for each
@@ -207,7 +242,8 @@ delivery.
 DKR-R was created by ThatGuyMcd with help from the project's contributors.
 Thanks to the contributors behind the platform support, Modern camera,
 Track Lab, graphics safety and development tools. The 1.0.6 integration includes
-the merged work from PRs #51–#59 alongside our tested local changes.
+the merged work from PRs #51–#59. Version 1.0.7 also includes PR #60 alongside
+the local updater, launcher and lava changes.
 
 The application icon was created by
 [POOTERMAN](https://www.deviantart.com/pooterman). `sr.gu` leads the DKR-R HDR
