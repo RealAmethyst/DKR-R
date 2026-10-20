@@ -8,6 +8,15 @@
   </a>
 </p>
 
+## DKR-R v1.0.8
+
+This one fixes a nasty Windows startup issue. The game could stop before it
+even reached the graphics, with mods on or off. Windows was being asked to
+commit 4 GiB of memory instead of the 512 MiB we actually use. That is fixed,
+the guard region is still protected, and your saves/mods do not need reset.
+If memory really is unavailable, the log now gives us the Windows error too.
+All the 1.0.7 additions below are still here.
+
 ## DKR-R v1.0.7
 
 Right, there is a LOT in this update! We have a proper Mod Store built into the

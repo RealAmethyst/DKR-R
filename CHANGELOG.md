@@ -1,5 +1,15 @@
 # DKR-R changelog
 
+## 1.0.8 — 20 October 2026
+
+- Fix Windows startup committing the 4 GiB guard/address reservation.
+- Commit only the existing 512 MiB usable RDRAM; leave 3.5 GiB guarded.
+- Log the failed allocation phase, Windows error, requested sizes and memory
+  availability instead of the old generic allocation message.
+- Preserve the accepted 1.0.7 water/source composition, saves, SDK and mods.
+- Rebuild Windows, Linux x86_64/ARM64, Steam Deck and Android ARM64.
+- Keep the existing Android signing identity and use version code 1080001.
+
 ## 1.0.7 — 20 October 2026
 
 Back up your data and keep the complete package together when updating.

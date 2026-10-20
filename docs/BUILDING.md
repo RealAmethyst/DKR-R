@@ -317,3 +317,9 @@ Ship the whole package and notices, not just the game executable.
 
 Record source identity, configuration, package hashes, test results and
 outstanding device/gameplay checks in [release validation](../RELEASE-VALIDATION.md).
+
+## v1.0.8 startup hotfix
+
+Use [the startup hotfix pipeline](../patches/startup-memory/BUILDING.txt).
+It composes the same frozen 1.0.7 inputs, adds only the isolated runtime-memory
+patch and compiles the actual 1.0.8 version. Android version code is 1080001.

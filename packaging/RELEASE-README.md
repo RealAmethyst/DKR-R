@@ -1,4 +1,4 @@
-# DKR-R v1.0.7
+# DKR-R v1.0.8
 
 Extract the entire Windows folder and open DKR-R.exe. Keep assets and libexec
 with it. Linux/Steam Deck: make the AppImage executable and launch it. Android:
