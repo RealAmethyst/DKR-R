@@ -1,5 +1,9 @@
 # DKR-R updates
 
+## v1.0.7 release contract
+
+Manual stable upgrade is required from existing 1.0.7+beta builds: their reader ignores +metadata and compares them equal to 1.0.7. Do not weaken signature checks. Automatic-update metadata is only provided when signed by the existing approved key; the public key alone cannot sign a release. Android must retain the app ID/certificate and increase versionCode. Player packages do not include this offline guide.
+
 Version 1.0.7 checks GitHub after the launcher has appeared. You'll get
 a notice when a newer release is available. Choose Download update, then Install
 update and restart when you're finished playing. Nothing is downloaded or

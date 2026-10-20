@@ -468,7 +468,9 @@ INPUT_NATIVE_HASH = {
     "runtime-recomp/src/game/mods/legacy_guest_checkpoint.cpp": "4748e2ef4b83b4772373e0cf6719945fb3c420a7e60f716cef00834114cde789",
     # Prepared immutable-template instantiation preserves mount/allocation
     # order and owns a separate mutable bus for every replay world.
-    "runtime-recomp/src/game/mods/legacy_runtime_session.cpp": "96c08d60df6917e29fef2e92099ab447ee257ea5199e05f4c3bd05a4f786cecf",
+    # Scene identity diagnostics flush before the existing prepare/commit;
+    # no new state, callback, guest mutation or ownership route is introduced.
+    "runtime-recomp/src/game/mods/legacy_runtime_session.cpp": "6d0392831c4e97db11232d5a402dd8209b99dce99b9709f2911d087564ffacf2",
     # Oct 10: closed constant-load components and finite per-instance data;
     # immutable identities only. No memory instructions, new guest globals,
     # filesystem/network operations, or non-checkpointed interpreter state.
@@ -510,7 +512,10 @@ FULL_SCENE_NATIVE_HASH = {
     # Re-audited headless SDL guard: RT64 code is unchanged; without a window
     # the frustum hook retains its original no-op after defensive restoration.
     # The private canonical presentation hook remains an explicit identity.
-    "runtime-recomp/src/game/runtime_enhancements.cpp": "fe0d3653eb692b20708de52c2aa916aff5b30394a5e016dfa6e8794040e3a56a",
+    # Beta 5: four-player range compensation and a normal-runtime-only
+    # noninteractive sprite retention hook. Both remain explicit identities
+    # in the owned CPU; per-player preferences are consumed by the decoder.
+    "runtime-recomp/src/game/runtime_enhancements.cpp": "79d59b06477366169e41d213310385819e9f902441e18fe46d372a7ff789f8a9",
     "runtime-recomp/src/game/character_select_animation_policy.hpp": "ab8a0f4220c00ce1b5726ff75953f0c4944b5b4e24eba942b442e07268ad04da",
     "runtime-recomp/src/game/character_select_music_policy.hpp": "e2e308c4821e2b11cba32ecafd7195cdf7ed9cc4c4166c8b4078ec513441da6c",
 }
@@ -819,15 +824,25 @@ def boss_finish_diagnostic_body(body, revision):
 
 
 def instrument_function(name, body):
+    # Read-only renderer observations. Preserve every original instruction,
+    # return and native function call; only a fresh private output is written.
+    mesh=name=='render_mesh'
+    if mesh:
+        body=body.replace('{','{\n    dkr_owned_draw_event dkr_mesh_event;\n    dkr_probe_mesh_begin(rdram,ctx,&dkr_mesh_event);',1)
+    observed=name in ('viewport_reset','divider_draw','divider_clear_coverage','hud_render_general','hud_timer_render')
+    observe=f' dkr_probe_online_function("{name}", 1, rdram, ctx);' if observed else ''
+    if mesh:observe+=' dkr_probe_mesh_end(rdram,ctx,&dkr_mesh_event);'
+    if observed:
+        body=body.replace('{', '{\n    dkr_probe_online_function("'+name+'", 0, rdram, ctx);',1)
     body = body.replace("{", '{\n    dkr_probe_enter("' + name + '");', 1)
     # Keep an unbraced `if (hook()) return;` a single statement. Injecting two
     # unbraced statements would accidentally make the return unconditional.
-    body = re.sub(r"\breturn\s*;", "{ dkr_probe_leave(); return; }", body)
+    body = re.sub(r"\breturn\s*;", "{"+observe+" dkr_probe_leave(); return; }", body)
     # Some emitted functions have an implicit void return. Cover fallthrough
     # as well; after an explicit return this statement is simply unreachable.
     closing = body.rfind("}")
     if closing < 0: raise ValueError(f"Guest function has no closing brace: {name}")
-    body = body[:closing] + "\n    dkr_probe_leave();\n" + body[closing:]
+    body = body[:closing] + "\n   "+observe+"\n    dkr_probe_leave();\n" + body[closing:]
     body = re.sub(r"^(L_[A-Fa-f0-9]+:)\s*$", r"\1 dkr_probe_checkpoint();", body, flags=re.M)
     return body
 
@@ -835,6 +850,10 @@ def instrument_function(name, body):
 def native_stub(name, signature, full_scenes=False):
     ret, types = signature
     params = ", ".join(f"{t} p{i}" for i, t in enumerate(types)) or "void"
+    if name == "dkr_save_layout_fault":
+        if signature != ("void", ["uint8_t*", "recomp_context*"]):
+            raise ValueError("Unreviewed save-layout failure ABI")
+        return f'void {name}({params}) {{ dkr_probe_block("save-layout-invalid-guest-arrays-or-buffer"); }}'
     if name == "dkr_legacy_texture_animation":
         if signature != PROJECT_IMPORTS[name]:
             raise ValueError("Unreviewed texture animation hook ABI")
@@ -996,6 +1015,12 @@ def generate(source_dir: Path, header_path: Path, output: Path, roots, revision,
     if hashlib.sha256(header_bytes).hexdigest() != HEADER_HASH:
         raise ValueError("Unreviewed recomp.h; audit memory macros before updating the probe")
     header = header_bytes.decode("utf-8")
+    # An authored leaf staged into NEW CPU output, never a native import or
+    # mutable global service. The same checked MEM macros instrument it here.
+    import save_layout_pipeline
+    save_layout_header = save_layout_pipeline.owned_support(source_dir)
+    import character_portrait_pipeline
+    character_portrait_receipt = character_portrait_pipeline.owned_receipt(source_dir, revision)
     functions, prototypes, origins = {}, declarations(header), {}
     def merge(items):
         for name, signature in items.items():
@@ -1048,11 +1073,14 @@ def generate(source_dir: Path, header_path: Path, output: Path, roots, revision,
         for new,original in (("dkr_probe_scene_resume_main_cpu","main_game_loop"),("dkr_probe_scene_resume_mode_cpu","mode_game")):
             origins[new]={**origins[original],"phase":"private-confirmed-continuation"}
     helpers = set(re.findall(r"^#define\s+(\w+)\s*\(", header, re.M))
+    if save_layout_header:
+        helpers.update(re.findall(r"static\s+inline\s+\w+\s+(\w+)\s*\(", save_layout_header))
     helpers.update(re.findall(r"static\s+inline\s+\w+\s+(\w+)\s*\(", header))
     helpers.update(("if", "while", "switch", "for", "return", "sizeof", "void"))
     helpers.add("dkr_probe_scene_pending")
     helpers.add("dkr_probe_boss_trace")
     helpers.add("dkr_probe_local_world_draw")
+    helpers.update(("dkr_probe_mesh_begin","dkr_probe_mesh_end"))
     helpers.update(("dkr_probe_scene_entry","dkr_probe_block"))
     helpers.update(("dkr_probe_scene_unload_begin","dkr_probe_scene_unload_render_drained","dkr_probe_scene_unload_end"))
     helpers.update(("dkr_probe_scene_load_begin","dkr_probe_scene_load_reset","dkr_probe_scene_load_ready"))
@@ -1134,6 +1162,8 @@ def generate(source_dir: Path, header_path: Path, output: Path, roots, revision,
         # outside any private namespace and the protected inputs stay intact.
         rsp_headers["rsp.hpp"] = '#include "isolated_audio_symbols.h"\n' + rsp_headers["rsp.hpp"]
     output.mkdir(parents=True)
+    if save_layout_header:
+        (output / "save_layout_guest.h").write_text(save_layout_header, encoding="utf-8")
     if isolate_symbols:
         (output / "isolated_symbols.h").write_text(isolated_header, encoding="utf-8")
         (output / "isolated_runtime_symbols.h").write_text(runtime_isolation_header(used, blocked, revision), encoding="utf-8")
@@ -1149,7 +1179,8 @@ def generate(source_dir: Path, header_path: Path, output: Path, roots, revision,
     (output / "recomp.h").write_text(header, encoding="utf-8")
     extra = authored_declarations(full_scenes) if authored_cpu else ""
     private_names = '#include "isolated_symbols.h"\n' if isolate_symbols else ''
-    (output / "funcs.h").write_text(private_names + (source_dir / "funcs.h").read_text(encoding="utf-8") + extra, encoding="utf-8")
+    (output / "funcs.h").write_text(private_names + (source_dir / "funcs.h").read_text(encoding="utf-8") + extra +
+        ('\n#include "save_layout_guest.h"\n' if save_layout_header else ''), encoding="utf-8")
     ordered = sorted(used)
     code_policy=(magic_code_pipeline.policy_names(source_dir,revision,code_policy_config)|set(magic_code_pipeline.TRACK_OPTIONS)) if mod_services else set()
     code_menu_fields=magic_code_pipeline.track_menu_fields(code_originals) if mod_services else ''
@@ -1186,6 +1217,9 @@ def generate(source_dir: Path, header_path: Path, output: Path, roots, revision,
             stubs.append(native_stub(name, prototypes[name], full_scenes))
     (output / "blocked_imports.c").write_text("\n".join(stubs) + "\n", encoding="utf-8")
     (output / "manifest.json").write_text(json.dumps({"revision": revision, "roots": roots, "scene_cuts": scene_cuts, "full_scenes": full_scenes,
+        "character_portrait_pipeline": character_portrait_receipt,
+        "save_layout_schema": 1 if save_layout_header else 0,
+        "save_layout_helper_sha256": hashlib.sha256(save_layout_header.encode()).hexdigest() if save_layout_header else "",
         "boss_finish_diagnostics": boss_finish_diagnostics,
         "owned_mod_services": mod_services,
         "code_dispatch_schema": 2 if mod_services else 0,
@@ -1194,6 +1228,8 @@ def generate(source_dir: Path, header_path: Path, output: Path, roots, revision,
         "checked_inline_memory": inline_memory,
         "owned_mod_calls": OWNED_MOD_CALLS if mod_services else {},
         "local_world_observations": full_scenes,
+        "online_view_observations": 2 if full_scenes else 0,
+        "local_model_observations": 1 if full_scenes else 0,
         "local_world_observation_source": origins["render_level_geometry_and_objects"] if full_scenes else {},
         "boss_finish_diagnostic_source": origins["racer_boss_finish"] if boss_finish_diagnostics else {},
         "symbol_prefix": f"dkr_experimental_v{revision}_" if isolate_symbols else "",

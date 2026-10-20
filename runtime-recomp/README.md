@@ -1,5 +1,9 @@
 # DKR-R native recompilation runtime
 
+## v1.0.7 release contract
+
+Current release: v1.0.7. The complete accepted build uses the release Patch Pipeline, not this base target alone. See ../patches/release-prep/v1.0.7/BUILDING.txt. SDK 2 is additive to API 1; Store, shared personal saves and development isolation are included. Do not edit dependencies or generated guest functions.
+
 This is the project-owned integration layer for DKR-R 1.0.7.
 It combines generated DKR CPU/Rare RSP output, N64ModernRuntime, the F3DDKR/RT64
 bridge and the shared launcher/overlay.

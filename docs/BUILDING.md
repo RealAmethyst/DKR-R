@@ -1,10 +1,10 @@
-# Building DKR-R
+# Building DKR-R v1.0.7
 
-The current source is v1.0.7 beta 2 (`VERSION`: `1.0.7+beta.2`). Keep every
-platform on that same source/version. The `+beta.2` label preserves the 1.0.7
-minimum-host baseline used by the supplied code mods; it is not a newer SDK API.
-Quote the complete `-DDKR_RELEASE_VERSION=...` argument in PowerShell so `+`
-is not interpreted while constructing the command.
+The stable version is `1.0.7`. All delivered platforms must use the same
+accepted source/feature ledger. Start with the
+[release pipeline](../patches/release-prep/v1.0.7/BUILDING.txt) for the final
+composition and explicit prepared-input contract. Do not substitute an older
+package or rename a beta executable.
 
 For contributor checks that need no ROM or game build, start with
 `python3 scripts/check.py` and the [host presets](DEVELOPMENT.md#first-contribution-tests-without-a-rom).
@@ -88,17 +88,36 @@ or edit generated output to admit a new closure.
 
 ## Configure a complete desktop build
 
+Beta 5's local Online maximum-detail renderer also needs two fresh model-only
+outputs. These are separate from both the normal and owned CPU directories:
+
+```text
+python scripts/generate_visual_model_kernel.py --generated <normal-v77>
+    --header <pinned-recomp.h> --elf <v77.elf> --revision 77
+    --output <fresh-model-v77>
+```
+
+Repeat for revision 80 using its own ELF and normal input. The script checks
+the five leaf routine hashes, scalar symbols and memory ABI. It emits only
+the model closure, with checked reads, shadowed guest stores and an operation
+budget; there is no game-world redraw or gameplay/native-import escape.
+Supply both outputs using `DKR_VISUAL_MODEL_GENERATED_V77` and
+`DKR_VISUAL_MODEL_GENERATED_V80`. Without them the local model feature is not
+compiled and the live Online maximum-detail control remains unavailable.
+
 Example Windows configuration, with placeholder paths replaced:
 
 ```powershell
 cmake -S runtime-recomp -B build/public-windows -G "Visual Studio 17 2022" -A x64 `
-  '-DDKR_RELEASE_VERSION=1.0.7+beta.2' `
+  '-DDKR_RELEASE_VERSION=1.0.7' `
   -DDKR_RUNTIME_BUILD_RT64=ON -DDKR_RUNTIME_BUILD_SDL3_INPUT_HOST=ON `
   '-DDKR_GENERATED_SOURCE_V77=<normal-v77>' '-DDKR_GENERATED_SOURCE_V80=<normal-v80>' `
   '-DDKR_GENERATED_RSP_SOURCE=<prepared-RSP-output>' `
   -DDKR_EXPERIMENTAL_RACE_TEST=ON `
   '-DDKR_EXPERIMENTAL_OWNED_GENERATED=<owned-v77>' `
   '-DDKR_EXPERIMENTAL_OWNED_GENERATED_V80=<owned-v80>' `
+  '-DDKR_VISUAL_MODEL_GENERATED_V77=<model-v77>' `
+  '-DDKR_VISUAL_MODEL_GENERATED_V80=<model-v80>' `
   -DDKR_LEGACY_QUALIFICATION=OFF -DDKR_REPLAY_QUALIFICATION=OFF `
   -DDKR_EXPERIMENTAL_RENDER_QUALIFICATION=OFF
 cmake --build build/public-windows --config Release --parallel
@@ -113,7 +132,7 @@ On Linux use Ninja and a fresh build directory, with the same reviewed payloads:
 
 ```bash
 cmake -S runtime-recomp -B build/public-linux -G Ninja \
-  -DCMAKE_BUILD_TYPE=Release '-DDKR_RELEASE_VERSION=1.0.7+beta.2' \
+  -DCMAKE_BUILD_TYPE=Release '-DDKR_RELEASE_VERSION=1.0.7' \
   -DDKR_RUNTIME_BUILD_RT64=ON -DDKR_RUNTIME_BUILD_SDL3_INPUT_HOST=ON \
   '-DDKR_GENERATED_SOURCE_V77=<normal-v77>' \
   '-DDKR_GENERATED_SOURCE_V80=<normal-v80>' \
@@ -121,6 +140,8 @@ cmake -S runtime-recomp -B build/public-linux -G Ninja \
   -DDKR_EXPERIMENTAL_RACE_TEST=ON \
   '-DDKR_EXPERIMENTAL_OWNED_GENERATED=<owned-v77>' \
   '-DDKR_EXPERIMENTAL_OWNED_GENERATED_V80=<owned-v80>' \
+  '-DDKR_VISUAL_MODEL_GENERATED_V77=<model-v77>' \
+  '-DDKR_VISUAL_MODEL_GENERATED_V80=<model-v80>' \
   -DDKR_LEGACY_QUALIFICATION=OFF -DDKR_REPLAY_QUALIFICATION=OFF \
   -DDKR_EXPERIMENTAL_RENDER_QUALIFICATION=OFF
 cmake --build build/public-linux --parallel
@@ -129,8 +150,8 @@ DKR_LINUX_BUILD_DIR="$PWD/build/public-linux" ./scripts/Package-Linux-AppImage.s
 ```
 
 `VERSION` supplies the package version. Default outputs are
-`dist/DKR-R-1.0.7+beta.2-Windows-x64.zip` and
-`dist/DKR-R-1.0.7+beta.2-Linux-x86_64.AppImage`.
+`dist/DKR-R-1.0.7-Windows-x64.zip` and
+`dist/DKR-R-1.0.7-Linux-x86_64.AppImage`.
 Keep prior outputs; the AppImage packager expects a fresh output/AppDir.
 Runtime packaging checks are on by default. If the release maintainer is doing
 all execution and acceptance on their own devices, package Linux without
@@ -242,7 +263,7 @@ Keep private qualification switches off in the packaged builds.
 Package Android with `scripts/Package-Android-Preview.ps1 -ReleaseBuild`,
 supplying the native build, SDL2 source, NDK, Gradle and fresh staging/output
 directories. Despite the script's historical name, `-ReleaseBuild` produces
-the non-debuggable `DKR-R-1.0.7+beta.2-Android-arm64.apk`. Build code 1070007 keeps
+the non-debuggable `DKR-R-1.0.7+beta.4-Android-arm64.apk`. Build code 1070010 keeps
 the existing application ID and signing identity so it can update the old
 app. Verify the signature, ARM64 libraries, 16 KiB ELF/ZIP alignment and
 bundled notices before distribution; do not replace the signing key casually.
@@ -251,7 +272,7 @@ For ARM64 AppImages, set `DKR_LINUX_ARCH=aarch64` and use matching ARM64
 linuxdeploy/AppImage tools with `scripts/Package-Linux-AppImage.sh`. The
 cross-host runner is `scripts/Run-Arm64-AppImage.sh`; QEMU self-tests still
 do not replace device rendering/audio tests. Steam Deck uses the Linux x86_64
-AppImage, not ARM64. Beta 2 also has an extracted portable tarball with the
+AppImage, not ARM64. Beta 3 also has an extracted portable tarball with the
 same x86_64 application/libraries and `START-DKR-R.sh`; it is not another engine.
 
 ## Custom Magic Codes SDK

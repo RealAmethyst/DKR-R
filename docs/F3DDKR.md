@@ -1,5 +1,9 @@
 # F3DDKR graphics HLE
 
+## v1.0.7 release contract
+
+The accepted liquid gate freezes descriptor/dimension/filter selection per renderer workload. It does not change shader passes, guest state or GPU retirement. Renderer/runtime patches are applied only to isolated build copies; protected dependency checkouts remain untouched.
+
 Diddy Kong Racing uses Rare's F3DDKR display-list microcode. DKR-R implements
 its graphics commands with a hand-authored high-level emulation (HLE) decoder
 in `runtime-recomp/src/game/f3ddkr_rt64.cpp`. The class is named

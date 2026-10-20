@@ -1,5 +1,9 @@
 # Renderer snapshot ownership
 
+## v1.0.7 release contract
+
+SDK 2 local tools/camera and coherent HD-liquid selection preserve copied presentation ownership. No independent online terrain/wave allocation or rolled-back high-LOD experiment is advertised. Checkpoint/save persistence stays confirmed-only.
+
 This reference describes the normal task/decode ownership. Experimental
 Rollback additionally retires owned submissions before correction and separates
 checkpoint memory from mutable presentation workspaces. See [architecture](ARCHITECTURE.md).

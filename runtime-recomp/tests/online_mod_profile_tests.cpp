@@ -254,6 +254,18 @@ int main(int argc,char** argv) {
         check(bundle.manifest.content.size()==1 && bundle.manifest.payloads.size()==1);
         for(const auto& [id,data]:bundle.payloads)write_new_file(root/"payloads"/id,*data);
         check(lab_before==sha256(pack_track_lab(lab)));
+        {
+            // A native-only lobby has no reason to spawn a legacy executable
+            // or require any ROM for file-only preparation.
+            const auto native=root/"native-only";std::filesystem::create_directory(native);
+            const auto prepared=prepare_profile(bundle.manifest,root/"payloads",{},native,{});
+            validate_profile(*prepared);check(profile_sources(*prepared).courses.size()==1);
+            std::stop_source stopped;stopped.request_stop();
+            rejects([&]{prepare_track_lab_library(bundle.manifest,root/"payloads",root/"cancelled-native",stopped.get_token());});
+            check(!std::filesystem::exists(root/"cancelled-native"/"verified.json"));
+            auto bad=bundle.manifest;bad.payloads.front().digest=std::string(64,'f');
+            rejects([&]{prepare_track_lab_library(bad,root/"payloads",root/"bad-native");});
+        }
         if(argc>=3) {
             const auto rom=utf8_path(argv[1]),worker=utf8_path(argv[2]);
             std::vector<std::filesystem::path> roms{rom};if(argc>=4)roms.push_back(utf8_path(argv[3]));
@@ -332,7 +344,7 @@ int main(int argc,char** argv) {
             for(const auto& p:bundle.manifest.payloads)check(cached_payload(reused_labs,p));
             check(lab_before==sha256(pack_track_lab(kept[0].source)));
             std::string activation_error;
-            check(dkr::runtime::custom_tracks::set_kept_enabled(kept[0].id,true,activation_error));
+            check(dkr::runtime::custom_tracks::set_enabled(kept[0].id,true,activation_error));
             dkr::runtime::custom_tracks::scan(offline_labs);
             check(dkr::runtime::custom_tracks::tracks()[0].enabled);
             retain_profile(*profile,offline,offline_labs); // Reuse without resetting an existing user's activation.

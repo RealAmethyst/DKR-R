@@ -49,6 +49,10 @@ void begin(std::shared_ptr<const mods::code::FrozenSet> code,rom::Revision revis
     next->world->course_selector([](const auto& id,unsigned carrier){legacy::request_scene(id,carrier);});
     legacy::set_trophy_menu(mods::code::trophy::menu_entries(*next->frozen));
     next->world->trophy_selector([]{return legacy::selected_trophy();});
+    std::fprintf(stderr,"[custom-magic-codes][session] online=%u packages=%zu identity=%s\n",
+        unsigned(online),next->frozen->ordered.size(),next->frozen->identity.c_str());
+    for(const auto& package:next->frozen->ordered)
+        std::fprintf(stderr,"[custom-magic-codes][package] id=%s version=%s payload=%s\n",package->id.c_str(),package->version.c_str(),package->digest.c_str());
     ordinary.store(std::move(next));
 }
 void reset(){ordinary.store(nullptr);std::lock_guard lock(error_mutex);last_error.clear();}
@@ -60,7 +64,13 @@ void boot(std::uint8_t* ram,std::size_t bytes) {
     catch(const std::exception& e){stop(e.what());}
 }
 std::string failure(){std::lock_guard lock(error_mutex);return last_error;}
-mods::Bytes bootstrap_checkpoint(){const auto value=ordinary.load();return value?value->world->checkpoint():mods::Bytes{};}
+mods::Bytes retire_bootstrap_checkpoint(std::span<std::uint8_t> live_ram) {
+    const auto value=ordinary.load();if(!value)return {};
+    // All native owners have joined. No subsequent call may reacquire this
+    // world, whether capture succeeds or fails; the owned runtime gets bytes.
+    ordinary.store(nullptr);
+    return value->world->retire_checkpoint(live_ram);
+}
 std::shared_ptr<const mods::code::FrozenSet> frozen(){const auto value=ordinary.load();return value?value->frozen:nullptr;}
 int dispatch(bool leaving,std::uint32_t address,std::uint8_t* ram,recomp_context* context) {
     if(!bound||!bound->world)stop("Code callback has no owner on this CPU thread.");

@@ -1,6 +1,6 @@
 # DKR-R documentation
 
-Start here for the current v1.0.7 beta 2 instructions. The older plans and playtest logs
+Start here for the current v1.0.7 instructions. The older plans and playtest logs
 are still useful, but they aren't the current feature list.
 
 ## Playing and settings
@@ -26,7 +26,7 @@ are still useful, but they aren't the current feature list.
 ## Track Lab and development
 
 - [Modders Guide to Custom Magic Code Creation](../modding/MODDERS-GUIDE.txt):
-  complete API 1 authoring book, settings, native hooks, trophies and online rules.
+  complete API 1/API 2 authoring book, settings, native hooks, trophies and online rules.
   The packaged SDK also includes a navigable HTML edition with the full headers.
 - [Custom Magic Codes SDK](../modding/SDK.txt) and
   [player guide](../modding/USER-GUIDE.txt).
@@ -48,7 +48,7 @@ are still useful, but they aren't the current feature list.
 
 ## Releases and credits
 
-- [Changelog](../CHANGELOG.md), [beta 2 notes](BETA2-1.0.7.txt) and
+- [Changelog](../CHANGELOG.md), [beta 5 notes](BETA5-1.0.7.txt), [beta 4 notes](BETA4-1.0.7.txt), [beta 3 notes](BETA3-1.0.7.txt), [beta 2 notes](BETA2-1.0.7.txt) and
   [1.0.7 public release notes](PUBLIC-1.0.7-NOTES.txt).
 - [Release validation](../RELEASE-VALIDATION.md) separates recorded automated
   checks from user-led gameplay/hardware acceptance.
@@ -61,12 +61,15 @@ and Android ARM64. See the platform guide and validation record for actual check
 Experimental Rollback and hardware ray tracing remain experimental.
 Android/ARM/macOS support must not be inferred from a desktop test count.
 
-## Proposed code-mod API
+## Current code-mod API
 
-[Modding architecture](MODDING_ARCHITECTURE.md) is the proposed DKR-R
-`.nrm` validation/API design. Its recorded baseline is historical.
-The reviewed legacy behaviour adapters already in the game are a different
-system; that proposal must not be advertised as a completed SDK.
+The implemented SDK 2.0 is additive to API 1. Use the
+[Modding Bible](../modding/MODDERS-GUIDE.txt) and exact SDK headers.
+[Modding architecture](MODDING_ARCHITECTURE.md) is the historical design,
+not a statement that the current SDK is only a proposal.
+
+Game packages contain no offline Player Guide. These guides remain in source;
+the separate SDK includes the Bible in TXT, HTML and PDF.
 
 ## Historical records
 

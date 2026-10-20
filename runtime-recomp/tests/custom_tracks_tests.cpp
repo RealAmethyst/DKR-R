@@ -1,5 +1,6 @@
 #include "temporary_directory.hpp"
 #include "custom_tracks.hpp"
+#include "custom_track_files.hpp"
 
 #include <algorithm>
 #include <cassert>
@@ -1254,6 +1255,27 @@ int main() {
             "\"volume\":90,\"loopStartFrame\":44100,\"loopEndFrame\":0,"
             "\"finalLap\":\"constant\"";
         music_track("song", 2, descriptor(ok_mp3, mp3.size()), "music/main.mp3", mp3);
+        // Online jobs nest hash-addressed payloads well beyond MAX_PATH.
+        // Extraction and music inspection must agree even when the public
+        // inspection entry point receives an ordinary, unprefixed path.
+        {
+            auto deep=root/"long-online-job";
+            for(unsigned i=0;i<5;++i)deep/=std::string(64,static_cast<char>('a'+i));
+            deep/=std::filesystem::u8path("course-\xE2\x98\x83.dkrmap");
+            const auto stored=files::storage(deep);
+            std::filesystem::create_directories(stored/"music");
+            write_file(stored/"h.bin",header);write_file(stored/"music/main.mp3",mp3);
+            write_file(stored/"manifest.json","{\"schemaVersion\":2,\"id\":\"deep-song\","+
+                descriptor(ok_mp3,mp3.size())+"\"adds\":[{\"section\":\"LEVEL_HEADERS\",\"file\":\"h.bin\"}]}");
+            Track inspected;std::string issue;
+            assert(inspect_package(deep,inspected,issue));
+            assert(inspected.music && std::filesystem::file_size(inspected.music->file)==mp3.size());
+            std::filesystem::path escaped;
+            assert(!files::resolve(deep,"../outside.mp3",escaped,issue));
+            assert(!files::resolve(deep,"music/CON.mp3",escaped,issue));
+            assert(!files::resolve(deep,"music/missing.mp3",escaped,issue));
+            assert(issue.find("music/missing.mp3")!=std::string::npos);
+        }
         music_track("wave", 2,
                     descriptor("\"codec\":\"wav\",\"file\":\"music/main.wav\","
                                "\"carrierSequence\":12", wav.size()),
@@ -1395,6 +1417,64 @@ int main() {
         assert(music->sequence && music->sequence->size() == song.size());
         assert(std::equal(song.begin(), song.end(), music->sequence->begin(),
                           [](char a, std::uint8_t b) { return static_cast<std::uint8_t>(a) == b; }));
+    }
+
+    // Native library switches persist separately from packages, including
+    // watched author sources. Pure package inspection stays host-authoritative.
+    {
+        const auto profile = root / "selection-profile";
+        const auto library = profile / "installed";
+        const auto working = profile / "working";
+        write_track(library / "local.dkrmap", "local", 200U);
+        write_track(working / "author.dkrmap", "author", 200U);
+        std::string header(200, '\0');
+        header[0] = kCustomTrackWorld;
+        header[0x4E] = 7;
+        write_file(library / "local.dkrmap" / "h.bin", header);
+        write_file(working / "author.dkrmap" / "h.bin", header);
+        scan(library);
+        set_working_directory(working);
+        scan(library);
+        assert(enabled_count() == 2U);
+        const auto original = read_file_text(library / "local.dkrmap" / "manifest.json");
+        std::string error;
+        arm_track_override("local");
+        set_auto_boot(true);
+        assert(set_enabled("local", false, error));
+        assert(error.empty() && armed_track_id().empty() && !auto_boot_enabled());
+        assert(set_enabled("author", false, error));
+        scan(library);
+        assert(enabled_count() == 0U);
+        assert(build_extended_table(Section::LevelHeaders, kRetail).empty());
+        assert(resolved_level_id("local") == -1 && resolved_level_id("author") == -1);
+        assert(track_select_entries().empty());
+        assert(read_file_text(library / "local.dkrmap" / "manifest.json") == original);
+        assert(!std::filesystem::exists(working / "author.dkrmap" / ".online-keep-state"));
+        Track inspected;
+        assert(inspect_package(library / "local.dkrmap", inspected, error));
+        assert(inspected.enabled); // Local preference is not package content.
+        assert(!set_enabled("missing", true, error));
+        assert(!error.empty() && enabled_count() == 0U);
+        assert(set_enabled("local", true, error));
+        scan(library);
+        assert(enabled_count() == 1U);
+        assert(!build_extended_table(Section::LevelHeaders, kRetail).empty());
+        assert(track_select_entries().size() == 1U && track_select_entries()[0].id == "local");
+        assert(set_enabled("author", true, error));
+        scan(library);
+        assert(enabled_count() == 2U);
+        write_file(profile / "custom-tracks-enabled.json", "invalid selection");
+        scan(library);
+        assert(enabled_count() == 0U);
+        assert(!set_enabled("local", true, error));
+        assert(!error.empty());
+        assert(read_file_text(profile / "custom-tracks-enabled.json") == "invalid selection");
+        const auto other = root / "other-profile" / "installed";
+        write_track(other / "local.dkrmap", "local", 128U);
+        scan(other);
+        set_working_directory({});
+        scan(other);
+        assert(enabled_count() == 1U); // A different profile has its own selection.
     }
 
     std::printf("custom_tracks_tests: ok\n");

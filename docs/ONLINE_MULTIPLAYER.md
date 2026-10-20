@@ -9,6 +9,18 @@ Use the same complete DKR-R package on every machine, including its private
 workers. The same original ROM revision, compatible build, gameplay rules and
 session mod identity must be admitted before the game starts.
 
+Use the complete v1.0.7 release on all peers. The modern-track music,
+Custom Magic Code startup/Track Select and Big Donut/Moon Station resource
+corrections are included. Verified matching installed data is reused.
+Independent high-detail online model/range parity is not qualified in this
+release; this pass preserves the accepted graphics paths.
+
+If Custom Trophy Races says **Update needed**, open its Details and choose
+**Update trophy mod**. The bundled 1.0.2 edition keeps your saved cups, but you
+must approve the new code and turn it on. Every track used by a cup must also
+be enabled before the host creates the lobby. Clients review and approve the
+host's exact code, settings and course selection as usual.
+
 Version 1.0.7 uses protocol 50. Use 1.0.7 on every device, not a mixture with
 1.0.5/1.0.6. Windows and Linux/SteamOS are not separate online versions.
 Replay-engine IDs normalise text line endings, so separately generated Windows
@@ -42,6 +54,31 @@ There is no joining a match after loading starts. If a racer leaves or an
 unrecoverable connection/state error occurs, the match ends and surviving
 copies return to the launcher/lobby with a reason. This deliberately avoids
 continuing with a missing input owner.
+
+## Your online view
+
+In DKR-R Online, **Your online view** lets each device choose **Original
+split-screen** or **My racer fullscreen**. The latter fills the game area with
+your own camera and repositions your HUD, whether the app is windowed or fullscreen.
+It doesn't remove opponents or change anybody else's display choice.
+
+This is built in, not a Custom Magic Code mod. It works in ordinary 2–4-player
+races through Auto / Experimental Rollback, with either supported US ROM.
+Menus, character/track selection, results, cutscenes and shared Adventure hubs
+keep their normal layout. If ownership or scene observations are incomplete,
+the whole frame uses the original presentation rather than guessing a camera.
+Offline games and the other online backends are unchanged.
+
+Other human racers can show **Name + race position**, **Race position** or
+nothing. Label size runs from 75% to 150%. Names come from the admitted lobby,
+not character names. Labels fade in the distance and are depth-tested against
+scenery. The original CPU position markers remain unchanged.
+
+These settings are saved on your device and are available in the overlay too.
+They don't change frozen host rules, mod settings, input delay or audio. Camera
+updates and simulation still run for everyone; fullscreen view is not a promise
+of single-player CPU performance. Use matching **beta 3** builds on every device.
+The [beta 3 notes](BETA3-1.0.7.txt) include the maintainer's gameplay checklist.
 
 ## Choosing a backend
 
@@ -135,6 +172,8 @@ Texture packs need not match the host's cosmetic selection.
 In Experimental Rollback, local scenery retention/view distance currently apply
 to restored eligible billboards, not every actor/mesh. FOV, vehicle LOD and
 other simulation-affecting camera/detail values remain canonical.
+Beta 4 restores this path after withdrawing the faulty beta 3 graphics-parity
+redraw. The fullscreen, HUD, sky and nameplate corrections are retained.
 The offline Modern camera is disabled online.
 Individual sound-category mixing is deferred; master volume stays local.
 Saved preferences remain available offline and in the legacy modes.
@@ -184,3 +223,11 @@ ROM revision and enabled mod set. Keep personal paths/invite details private.
 
 There is no voice/text chat, spectator mode or general public matchmaking
 directory. “Open Lobbies” is not a promise of an unrestricted public browser.
+
+## SDK 2 development and saves
+
+API 1 packages remain supported. API 2 development needs participant consent
+and host authority; agreed commands execute at confirmed boundaries. No
+unilateral live code reload is permitted online. Host online progress is
+separate from personal Adventure and development saves. See [Saves](SAVES.md)
+and [Magic Codes](MAGIC_CODES.md).

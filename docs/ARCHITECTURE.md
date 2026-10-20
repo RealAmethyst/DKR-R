@@ -1,5 +1,9 @@
 # DKR-R architecture
 
+## v1.0.7 release contract
+
+The release composes Camera++, SDK 2, Store, shared saves and presentation fixes through the Patch Pipeline. API 2 is additive. Personal, confirmed-online and development save ownership are separate. Isolated dependency source patches never edit the checked-out submodules.
+
 DKR-R is a static recompilation, with the matching DKR decomp as the readable
 reference for symbols, structures and algorithms. We keep enhancements in the
 authored integration layer and Patch Pipeline rather than hand-editing the

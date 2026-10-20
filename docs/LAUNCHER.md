@@ -1,49 +1,38 @@
 # Launcher and overlay
 
-The launcher and overlay use the same menu styling and settings. The launcher
-uses the cloud backdrop; the overlay keeps the game visible behind it.
-Desktop pages use the available width without replacing their established
-layouts. Android uses the separate mobile menu and touch layout.
+Pick your ROM and start from **Play**. Desktop portable mode selects a separate
+data location on the next launch; it does not move your existing profile.
+**Skip intro** can start at the Start Menu or Character Select. The Start Menu
+route keeps its normal first sequence and music. **Check for updates** is a
+small manual action in Play; background release checks still need your approval
+before downloading/installing an update.
 
-Open the overlay with Escape, F1 or controller Back/View. Use the D-pad/stick,
-select with A/Cross, cancel with B/Circle and change pages with LB/RB.
-Mouse input stays available.
+**DKR-R Online** contains Host / Quick Join, friends/profile, host settings and
+your online-view choices. Hide the lobby code when streaming. Host gameplay
+rules are agreed by the session; local presentation choices stay local where
+supported. See [Online](ONLINE_MULTIPLAYER.md).
 
-Play includes a small **Check for updates** button. Startup checks run in the
-background; downloading and installation always need your approval. Update
-preferences are in **About DKR-R → Updates**. See [Updates](UPDATES.md).
-The shorter help and dialogs are shared with the overlay too.
+**Mods / Hacks** has tracks, characters, Custom Magic Codes, Mod Store, Track
+Lab and import/help tools. Cards stay compact; Details contains the longer
+support information and settings. The Store supports both browsing layouts.
+See [Mods](LEGACY-MODS-BETA.md) and [Magic Codes](MAGIC_CODES.md).
 
-## Finding the settings
+**Graphics** and **Sound** apply the same settings in launcher and overlay.
+Use Escape, F1 or controller Back/View for the overlay. Optional water/reflection
+quality and lava glow have separate controls. [Graphics](GRAPHICS.md) explains
+their scope and cost. Camera++ is an optional mod, not a forced camera replacement.
 
-| Tab | What belongs there |
-|---|---|
-| Play | Add/select an original ROM, start offline, choose a skip-intro destination, preview offline progress and set portable mode for next launch. |
-| DKR-R Online | Quick Join/friends, host rules, lobby readiness, mod admission and network overlays. |
-| Mods / Hacks | My mods, Magic Codes, Track Lab and Help & imports. |
-| Graphics | Presentation/window mode, resolution/rate, HUD, camera/scenery, renderer settings and optional enhanced water. |
-| Sound | Master/category volume, multiplayer music and EQ. |
-| Controls | Local player profiles, assignments, bindings, controller setup, gyro and Android touch controls. |
-| Save Manager | Offline editing plus separate Online, Modded and Recovery views. |
-| Textures | Texture packs, priority, track-owned HD packs and CRT filters. |
-| About DKR-R | Credits, version and Support summary/export/log controls. |
+**Controls** selects input mappings. Text entry offers an on-screen keyboard;
+controller navigation and scrolling are available in supported editors.
+Android has a Menu drawer and editable touch controls rather than the desktop
+SDL3 helper. Keep access to Menu when hiding racing controls.
 
-**Skip intro logos** is off by default. When enabled, its dropdown offers
-**Start menu** (the original first sequence with music) or **Character select**.
-It applies only to offline launches. Online startup is untouched and a direct
-Track Lab launch takes priority.
+**Save Manager** manages personal progress, online progress, development saves,
+Paks, transfers and recovery. It does not switch your personal Adventure every
+time you change ordinary mods. See [Saves](SAVES.md) before restoring progress.
 
-The selected window/fullscreen setting is also used when the desktop launcher
-starts. Alt+Enter/F11 can toggle the current window. Portable-mode changes apply
-on the next application launch, not by changing a live save route.
-
-Some preferences are live, some apply next game launch, and online rules apply
-to a newly created lobby. Read the setting's help rather than assuming a running
-match can accept every change.
-
-## Guides
-
-Use [Graphics](GRAPHICS.md), [Sound](SOUND.md), [Controls](CONTROLLERS.md),
-[Saves](SAVES.md), [Textures](TEXTURE_PACKS.md), [Mods](LEGACY-MODS-BETA.md),
-[Magic Codes](MAGIC_CODES.md) and [Online](ONLINE_MULTIPLAYER.md).
-For a stuck or missing control, see [troubleshooting](TROUBLESHOOTING.md).
+**Textures** imports/enables packs and sets priorities. **About DKR-R** contains
+updates and the support summary above the credits. Support actions can open or
+export logs/crash information; review private paths and lobby details before
+sharing. Extra Save Location/Connection Details/Reflection Details disclosures
+have been removed. Detailed instructions live in the repository docs instead.

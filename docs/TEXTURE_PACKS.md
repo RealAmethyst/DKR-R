@@ -1,5 +1,9 @@
 # CRT filters and texture packs
 
+## v1.0.7 release contract
+
+Store-installed packs retain friendly names and managed installation receipts. Reinstall/update targets the selected owned copy. Recognised liquid animation families stay original until all matching HD frames are resident; incomplete families remain consistently original. Pack order and normal Stream/Stall/Preload policy are retained.
+
 These features belong to the **Modern** preset. Accurate always uses the
 original game textures and presentation so it remains the release reference.
 

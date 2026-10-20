@@ -516,7 +516,7 @@ void DrawGraphicsPage(float available_width, bool live) {
             PaddockGap(16.0F);
 #endif
             if (owned_camera_settings_deferred) {
-                SettingsHelp("Some camera and detail settings aren't available in this online mode. Scenery settings affect restored sprites, not every object or part of the track.", inner);
+                SettingsHelp("These detail and scenery choices are yours alone. Online play keeps the shared course geometry and wave grid unchanged.", inner);
                 PaddockGap(16.0F);
             }
             const auto check = [&](const char* id, const char* label, bool value, auto setter,
@@ -530,8 +530,11 @@ void DrawGraphicsPage(float available_width, bool live) {
                 ImGui::EndDisabled();
             };
             check("##max-detail", "Maximum vehicle detail", enh::maximum_detail_requested(),
-                  enh::set_maximum_detail_enabled, "Use the most detailed racer models.", true,
-                  owned_camera_settings_deferred);
+                  enh::set_maximum_detail_enabled, "Use the most detailed racer models.", true
+#if !defined(DKR_LOCAL_MODEL_DETAIL)
+                  , owned_camera_settings_deferred
+#endif
+                  );
             check("##hub-scenery", "Keep hub scenery rendered", enh::keep_hub_scenery_requested(),
                   enh::set_keep_hub_scenery_enabled, "Keep visible hub scenery from disappearing.");
             check("##track-scenery", "Keep track and boss scenery rendered", enh::keep_track_scenery_requested(),
@@ -542,20 +545,17 @@ void DrawGraphicsPage(float available_width, bool live) {
                   "Keep visible minigame scenery from disappearing.");
             check("##ultrawide", "Reduce wide-screen scenery pop-in", enh::extended_culling_requested(),
                   enh::set_extended_culling_enabled,
-                  "Keeps scenery visible near wide-screen edges.", false,
-                  owned_camera_settings_deferred);
+                  "Keeps scenery visible near wide-screen edges.");
             if (enh::extended_culling_requested()) {
                 PaddockGap(16.0F);
                 ImGui::Indent(36.0F);
                 int guard = enh::frustum_guard_percent();
-                ImGui::BeginDisabled(owned_camera_settings_deferred);
                 if (SettingsRange("##guard", "Visibility margin", &guard, 0, 20, inner - 36.0F,
                                   [](int value) { return SettingsRangeValue{std::to_string(value), "%"}; },
                                   "Extra scenery around the edges of the view.")) {
                     enh::set_frustum_guard_percent(guard);
                     SaveSettings();
                 }
-                ImGui::EndDisabled();
                 ImGui::Unindent(36.0F);
             }
             PaddockGap(18.0F);
@@ -583,10 +583,10 @@ void DrawGraphicsPage(float available_width, bool live) {
             PaddockGap(16.0F);
             distance("##animated-distance", "Animated scenery distance",
                      enh::animated_scenery_distance_multiplier(), enh::kMaximumAnimatedSceneryMultiplier,
-                     enh::set_animated_scenery_distance_multiplier, owned_camera_settings_deferred);
+                     enh::set_animated_scenery_distance_multiplier);
             distance("##billboard-distance", "Sprites and effects distance",
                      enh::billboard_effect_distance_multiplier(), enh::kMaximumBillboardEffectMultiplier,
-                     enh::set_billboard_effect_distance_multiplier, owned_camera_settings_deferred);
+                     enh::set_billboard_effect_distance_multiplier);
             distance("##water-distance", "Water and lava detail distance", enh::water_lava_detail_multiplier(),
                      enh::kMaximumWaterLavaDetailMultiplier, enh::set_water_lava_detail_multiplier,
                      owned_camera_settings_deferred);

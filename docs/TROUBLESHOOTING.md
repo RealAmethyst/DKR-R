@@ -1,5 +1,9 @@
 # Troubleshooting DKR-R
 
+## v1.0.7 release contract
+
+Normal mods share one personal Adventure. Check portable/profile location and Backups & Recovery before restoring. Keep installation receipts/recovery folders. Export logs/support details; report the exact release, ROM revision, course, packs and settings. The accepted HD-water startup fix is included; a hardware-specific problem still needs its own report.
+
 Start with the symptom and keep the original data. Please don't delete your
 saves or whole profile to troubleshoot a graphics, mod or connection failure.
 

@@ -62,6 +62,7 @@ def main() -> int:
     p.add_argument('--output', type=Path, required=True)
     p.add_argument('--clang', default='clang')
     p.add_argument('--lld', default='ld.lld')
+    p.add_argument('--source-map', action='store_true', help='Include callback source locations in this development package')
     p.add_argument('--mod-tool', type=Path, required=True)
     p.add_argument('--reference-kit',type=Path,help='Address-only pinned kit for a single-revision raw mod')
     a = p.parse_args()
@@ -77,7 +78,7 @@ def main() -> int:
     if meta_path.stat().st_size > 1024 * 1024:
         raise ValueError('DKR metadata exceeds its budget')
     meta = json.loads(meta_path.read_text(encoding='utf-8'), object_pairs_hook=unique_object)
-    if meta.get('schema') != 1 or meta.get('api') != 1:
+    if meta.get('schema') != 1 or meta.get('api') not in (1, 2):
         raise ValueError('Unsupported DKR SDK metadata version')
     reference=SDK/'reference-sdk-only.toml';data_references=[];extra_link=[]
     if a.reference_kit:
@@ -106,8 +107,8 @@ def main() -> int:
         for match in matches:
             relative = match.relative_to(project).as_posix()
             source = local(project, relative)
-            if source.suffix != '.c' or source.stat().st_size > 1024 * 1024:
-                raise ValueError('Only bounded portable C sources are supported')
+            if source.suffix not in ('.c', '.cpp', '.cc') or source.stat().st_size > 1024 * 1024:
+                raise ValueError('Only bounded freestanding C or C++ sources are supported')
             sources.add(source)
     if not sources or len(sources) > 256:
         raise ValueError('Source file count exceeds its budget')
@@ -129,9 +130,15 @@ def main() -> int:
              '-fno-pic', '-G0', '-mfp32', '-mno-odd-spreg', '-ffreestanding', '-fno-builtin',
              '-fno-stack-protector', '-ffp-contract=off', '-O2', '-Wall', '-Wextra', '-Werror',
              '-I' + str(SDK / 'include'), '-I' + str(project)]
+    # Keep complete HI16/LO16 address expressions for relocation at arbitrary
+    # mod bases; machine CSE can otherwise share a LUI across different carries.
+    flags += ['-fdata-sections', '-mllvm', '-disable-machine-cse']
+    if a.source_map:
+        flags += ['-gline-tables-only', '-fdebug-compilation-dir=/mod', '-ffile-prefix-map='+str(project)+'=/mod', '-ffile-prefix-map='+str(SDK)+'=/sdk']
     for index, source in enumerate([SDK/'runtime.c',*sorted(sources)]):
         obj = output / f'unit-{index}.o'
-        subprocess.run([clang, *flags, '-c', str(source), '-o', str(obj)], check=True)
+        extra = ['-fno-exceptions', '-fno-rtti', '-fno-threadsafe-statics', '-std=c++17'] if source.suffix in ('.cpp','.cc') else []
+        subprocess.run([clang, *flags, *extra, '-c', str(source), '-o', str(obj)], check=True)
         objects.append(obj)
     elf = output / 'mod.elf'
     subprocess.run([lld, '-m', 'elf32btsmip', '-static', '--emit-relocs', '-T', str(SDK / 'mod.ld'),
@@ -154,7 +161,21 @@ def main() -> int:
     tool_config = output / 'tool.toml'
     tool_config.write_text('\n'.join(lines) + '\n', encoding='utf-8')
     subprocess.run([str(tool), str(tool_config), str(output)], check=True)
+    import sys
+    subprocess.run([sys.executable, '-B', str(SDK/'relocations.py'), '--elf', str(elf),
+                    '--symbols', str(output/'mod_syms.bin'), '--binary', str(output/'mod_binary.bin'),
+                    '--report', str(output/'relocation-report.json')], check=True)
     package = output / (manifest['id'] + '.nrm')
+    if a.source_map:
+        import sys
+        if 'source-map' in meta.get('resources', {}) or 'source-map.json' in resources:
+            raise ValueError('The project already declares a source map; omit --source-map to retain it')
+        source_map = output/'source-map.json'
+        subprocess.run([sys.executable, '-B', str(SDK/'tools.py'), 'source-map', str(elf), '--output', str(source_map)], check=True)
+        meta.setdefault('resources', {})['source-map']='source-map.json'
+        resources['source-map.json']=source_map
+        meta_path=output/'dkr-staged.json'
+        meta_path.write_text(json.dumps(meta, indent=2)+'\n', encoding='utf-8')
     fixed = {'mod.json': output / 'mod.json', 'mod_syms.bin': output / 'mod_syms.bin',
              'mod_binary.bin': output / 'mod_binary.bin', 'dkr.json': meta_path}
     if any(name in fixed for name in resources):

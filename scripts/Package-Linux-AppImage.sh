@@ -48,7 +48,7 @@ VERSION="${DKR_RELEASE_VERSION:-${VERSION_FILE_VALUE}}"
 EXPERIMENTAL_RACE_TEST=0
 if grep -Eq '^DKR_EXPERIMENTAL_RACE_TEST:BOOL=(ON|1|TRUE|YES)[[:space:]]*$' "${BUILD_DIRECTORY}/CMakeCache.txt"; then
   EXPERIMENTAL_RACE_TEST=1
-  if [[ "${VERSION}" != 1.0.5 && "${VERSION}" != 1.0.6 && "${VERSION}" != 1.0.7 && "${VERSION}" != 1.0.7+beta.2 ]]; then
+  if [[ "${VERSION}" != 1.0.5 && "${VERSION}" != 1.0.6 && "${VERSION}" != 1.0.7 && "${VERSION}" != 1.0.7+beta.2 && "${VERSION}" != 1.0.7+beta.3 && "${VERSION}" != 1.0.7+beta.4 && "${VERSION}" != 1.0.7+beta.5 ]]; then
   [[ "${VERSION}" == *experimental* || "${VERSION}" == *rollback-test* || "${VERSION}" == 1.0.5-beta.15 || "${VERSION}" == 1.0.5-beta.15-playtest.[23456789] || "${VERSION}" == 1.0.5-beta.15-playtest.10 || "${VERSION}" == 1.0.5-beta.15-playtest.11 || "${VERSION}" == 1.0.5-beta.15-playtest.12 || "${VERSION}" == 1.0.5-beta.15-playtest.14 || "${VERSION}" == 1.0.5-beta.15-playtest.15 || "${VERSION}" == 1.0.5-beta.15-playtest.15-fix.[12] || "${VERSION}" == 1.0.5-beta.15-playtest.16 || "${VERSION}" == 1.0.5-beta.15-playtest.16-fix.[12] ]] || { echo 'Experimental builds require a distinct experimental version or an approved Beta 15 playtest candidate.' >&2; exit 1; }
 fi
 fi
@@ -202,7 +202,16 @@ fi
 if [[ "${VERSION}" == 1.0.7+beta.2 ]]; then
   install -m 0644 "${PROJECT_ROOT}/docs/BETA2-1.0.7.txt" "${APPDIR}/usr/share/doc/dkr-port/RELEASE-NOTES.txt"
 fi
-if [[ "${EXPERIMENTAL_RACE_TEST}" == 1 && "${VERSION}" != 1.0.5 && "${VERSION}" != 1.0.6 && "${VERSION}" != 1.0.7 && "${VERSION}" != 1.0.7+beta.2 ]]; then
+if [[ "${VERSION}" == 1.0.7+beta.4 ]]; then
+  install -m 0644 "${PROJECT_ROOT}/docs/BETA4-1.0.7.txt" "${APPDIR}/usr/share/doc/dkr-port/RELEASE-NOTES.txt"
+fi
+if [[ "${VERSION}" == 1.0.7+beta.5 ]]; then
+  install -m 0644 "${PROJECT_ROOT}/docs/BETA5-1.0.7.txt" "${APPDIR}/usr/share/doc/dkr-port/RELEASE-NOTES.txt"
+fi
+if [[ "${VERSION}" == 1.0.7+beta.3 ]]; then
+  install -m 0644 "${PROJECT_ROOT}/docs/BETA3-1.0.7.txt" "${APPDIR}/usr/share/doc/dkr-port/RELEASE-NOTES.txt"
+fi
+if [[ "${EXPERIMENTAL_RACE_TEST}" == 1 && "${VERSION}" != 1.0.5 && "${VERSION}" != 1.0.6 && "${VERSION}" != 1.0.7 && "${VERSION}" != 1.0.7+beta.2 && "${VERSION}" != 1.0.7+beta.3 && "${VERSION}" != 1.0.7+beta.4 && "${VERSION}" != 1.0.7+beta.5 ]]; then
   # The earlier generic file describes Playtest 2; current playtests ship their own
   # current connection/scope guide instead of contradictory version guidance.
   if [[ "${VERSION}" != 1.0.5-beta.15 && "${VERSION}" != 1.0.5-beta.15-playtest.8 && "${VERSION}" != 1.0.5-beta.15-playtest.9 && "${VERSION}" != 1.0.5-beta.15-playtest.10 && "${VERSION}" != 1.0.5-beta.15-playtest.11 && "${VERSION}" != 1.0.5-beta.15-playtest.12 && "${VERSION}" != 1.0.5-beta.15-playtest.14 && "${VERSION}" != 1.0.5-beta.15-playtest.15 && "${VERSION}" != 1.0.5-beta.15-playtest.15-fix.[12] && "${VERSION}" != 1.0.5-beta.15-playtest.16 && "${VERSION}" != 1.0.5-beta.15-playtest.16-fix.[12] ]]; then

@@ -851,6 +851,8 @@ if(DKR_RUNTIME_BUILD_GENERATED)
             src/game/hud_basic_settings.cpp
             src/game/f3ddkr_rt64.cpp
             src/game/local_scenery_rt64.cpp
+            src/game/online_view_rt64.cpp
+            src/game/online_nameplates_rt64.cpp
             src/game/generated/jumpman_font.c
             src/game/generated/racing_banana_font.c
             src/game/generated/selawik_font.c
@@ -1053,6 +1055,16 @@ add_executable(DKRRuntimeProbe src/runtime_probe.cpp)
 
 set(DKR_EXPERIMENTAL_OWNED_GENERATED "" CACHE PATH "NEW isolated owned CPU Patch Pipeline output; integration targets only")
 set(DKR_EXPERIMENTAL_OWNED_GENERATED_V80 "" CACHE PATH "NEW isolated US Rev A full-scene owned CPU Patch Pipeline output")
+set(DKR_VISUAL_MODEL_GENERATED_V77 "" CACHE PATH "NEW renderer-only model kernel output for US v1.0")
+set(DKR_VISUAL_MODEL_GENERATED_V80 "" CACHE PATH "NEW renderer-only model kernel output for US v1.1")
+if(DKR_RUNTIME_BUILD_GENERATED AND DKR_RUNTIME_BUILD_RT64 AND DKR_VISUAL_MODEL_GENERATED_V77 AND DKR_VISUAL_MODEL_GENERATED_V80)
+    include(cmake/LocalModelDetail.cmake)
+    dkr_add_local_model_kernel(DKRLocalModelV77 "${DKR_VISUAL_MODEL_GENERATED_V77}" 77)
+    dkr_add_local_model_kernel(DKRLocalModelV80 "${DKR_VISUAL_MODEL_GENERATED_V80}" 80)
+    target_sources(DKRPortGame PRIVATE src/game/local_model_rt64.cpp)
+    target_compile_definitions(DKRPortGame PRIVATE DKR_LOCAL_MODEL_DETAIL=1)
+    target_link_libraries(DKRPortGame PRIVATE DKRLocalModelV77 DKRLocalModelV80)
+endif()
 if(DKR_EXPERIMENTAL_OWNED_GENERATED)
     include(cmake/ExperimentalOwnedGame.cmake)
     include(cmake/OwnedContentIdentity.cmake)
@@ -1099,6 +1111,8 @@ if(DKR_EXPERIMENTAL_OWNED_GENERATED)
         file(GLOB owned_identity_files CONFIGURE_DEPENDS
             "${CMAKE_CURRENT_LIST_DIR}/src/game/audio_event_queue*.h"
             "${CMAKE_CURRENT_LIST_DIR}/src/game/runtime_legacy_mods.cpp" "${CMAKE_CURRENT_LIST_DIR}/src/game/runtime_legacy_mods.hpp"
+            "${CMAKE_CURRENT_LIST_DIR}/src/game/runtime_code_mods.cpp" "${CMAKE_CURRENT_LIST_DIR}/src/game/runtime_code_mods.hpp"
+            "${CMAKE_CURRENT_LIST_DIR}/src/game/replay_probe_capture.cpp" "${CMAKE_CURRENT_LIST_DIR}/src/game/replay_probe_capture.hpp"
             "${CMAKE_CURRENT_LIST_DIR}/src/game/mods/*.cpp" "${CMAKE_CURRENT_LIST_DIR}/src/game/mods/*.hpp" "${CMAKE_CURRENT_LIST_DIR}/src/game/mods/*.h"
             "${owned_directory}/*.c" "${owned_directory}/*.cpp" "${owned_directory}/*.h" "${owned_directory}/*.hpp"
             "${CMAKE_CURRENT_LIST_DIR}/tests/replay_probe/*.c" "${CMAKE_CURRENT_LIST_DIR}/tests/replay_probe/*.cpp"

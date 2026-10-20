@@ -1,5 +1,9 @@
 # Repository scripts
 
+## v1.0.7 release contract
+
+Use patches/release-prep/v1.0.7/release.py and BUILDING.txt for stable composition. Packaging uses explicit runtime/legal allowlists; no offline Player Guide or old playtest handoff notes. Both US revisions, all owned payloads and exact staged inputs are required. Never invoke runtime checks when acceptance is reserved for the owner.
+
 Run these commands from the repository root with Python 3.10+ (`python` on
 Windows). Commands with options describe them with `--help`.
 
