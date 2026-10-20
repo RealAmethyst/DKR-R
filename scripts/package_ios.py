@@ -370,7 +370,7 @@ def write_ipa(app: Path, destination: Path) -> None:
 
 
 def release_number(version: str) -> str:
-    match = re.fullmatch(r"([1-9][0-9]{0,3})\.(0|[1-9][0-9]?)\.(0|[1-9][0-9]?)(?:-rc[1-9][0-9]*)?", version)
+    match = re.fullmatch(r"([1-9][0-9]{0,3})\.(0|[1-9][0-9]?)\.(0|[1-9][0-9]?)(?:-rc[1-9][0-9]*)?(?:\+[0-9A-Za-z.-]+)?", version)
     if match is None:
         raise RuntimeError(f"Invalid iOS release version: {version!r}; expected major.minor.patch[-rcN] (4/2/2 digits)")
     return ".".join(match.groups())
@@ -414,7 +414,7 @@ def main() -> int:
     require_plist(app, short, bundle_version(short))
     scan_app(app)
     sign_app(app)
-    ipa = ROOT / "dist" / f"DKR-R-{version}-iOS-arm64.ipa"
+    ipa = ROOT / "dist" / f"DKR-R-{version.replace('+', '-')}-iOS-arm64.ipa"
     write_ipa(app, ipa)
     print(f"Wrote {ipa}")
     return 0

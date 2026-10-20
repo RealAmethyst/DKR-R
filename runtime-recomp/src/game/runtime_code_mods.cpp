@@ -3,10 +3,16 @@
 #include "atomic_snapshot.hpp"
 #include "mods/online_game_pak.hpp"
 #include "ultramodern/ultramodern.hpp"
+#include "mods/magic_code_dispatch.h"
 #include <atomic>
 #include <cstdio>
 
+#if defined(__APPLE__)
+// Must match magic_code_dispatch.h: thread_local would hide these from the C payloads on Darwin.
+extern "C" {__thread int dkr_code_callbacks_enabled=0;__thread const std::uint8_t* dkr_code_hook_mask=nullptr;}
+#else
 extern "C" {thread_local int dkr_code_callbacks_enabled=0;thread_local const std::uint8_t* dkr_code_hook_mask=nullptr;}
+#endif
 namespace dkr::runtime::code_mods {
 namespace {
 struct Session {
