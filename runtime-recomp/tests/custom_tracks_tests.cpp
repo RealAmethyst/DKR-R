@@ -1430,6 +1430,8 @@ int main() {
         std::string header(200, '\0');
         header[0] = kCustomTrackWorld;
         header[0x4E] = 7;
+        header[0x37] = 73;
+        header[0xBB] = 5;
         write_file(library / "local.dkrmap" / "h.bin", header);
         write_file(working / "author.dkrmap" / "h.bin", header);
         scan(library);

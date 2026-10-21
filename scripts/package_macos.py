@@ -103,7 +103,7 @@ def package(build, version, build_number=None):
     if len(architectures) != 1 or architectures[0] not in ("arm64", "x86_64"):
         raise RuntimeError(f"Unsupported architectures: {architectures}")
     architecture = architectures[0]
-    name = f"DKR-R-{version}-macOS-{architecture}"
+    name = f"DKR-R-{version.replace('+', '-')}-macOS-{architecture}"
     dist = ROOT / "dist"
     dist.mkdir(exist_ok=True)
     # Assemble in a private temporary directory; leave existing releases intact.
@@ -241,6 +241,6 @@ if __name__ == "__main__":
     parser.add_argument("--build-number", default=os.environ.get("DKR_MAC_BUNDLE_VERSION"),
                         help="Explicit CFBundleVersion; otherwise reserve a distinct increasing build")
     args = parser.parse_args()
-    if release_number(args.version) is None or not re.fullmatch(r"[A-Za-z0-9._-]+", args.version):
+    if release_number(args.version) is None or not re.fullmatch(r"[A-Za-z0-9._+-]+", args.version):
         parser.error("version must start with a numeric major.minor.patch")
     package(args.build.resolve(), args.version, args.build_number)
