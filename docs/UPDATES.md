@@ -1,17 +1,23 @@
 # DKR-R updates
 
-## v1.0.7 release contract
+## v1.0.9 release contract
 
-Manual stable upgrade is required from existing 1.0.7+beta builds: their reader ignores +metadata and compares them equal to 1.0.7. Do not weaken signature checks. Automatic-update metadata is only provided when signed by the existing approved key; the public key alone cannot sign a release. Android must retain the app ID/certificate and increase versionCode. Player packages do not include this offline guide.
+The updater expects the exact filenames **DKR-R-update.json** and
+**DKR-R-update.sig** beside the platform downloads. The manifest must name
+the new package bytes and a committed source tree; the signature must be
+created again with the existing trusted Ed25519 private key. A v1.0.8 signature
+cannot authenticate an edited manifest, and its public key cannot sign one.
 
-Version 1.0.7 checks GitHub after the launcher has appeared. You'll get
-a notice when a newer release is available. Choose Download update, then Install
-update and restart when you're finished playing. Nothing is downloaded or
-installed without you choosing it.
+v1.0.9 is stable. The established release tag convention is `Version1.0.9`;
+the tag used for publication must exactly match the signed manifest. The
+signing operation does not create that tag or publish a release.
 
-Published v1.0.6 does not contain the updater. Install an updater-enabled build
-manually once; future compatible releases can then use it. The release must
-include signed update metadata before an automatic installation can be offered.
+The launcher checks GitHub after appearing and can offer a newer compatible
+release. Choose Download update, then Install update and restart after playing.
+Nothing is downloaded or installed without your choice. v1.0.6 needs one manual
+upgrade to an updater-enabled build. The old `1.0.7+beta` comparison issue only
+affects upgrading those builds to equal-version 1.0.7; it is not a reason to
+disable signatures or require every newer release to install manually.
 
 ## Launcher options
 
@@ -88,11 +94,25 @@ Use `scripts/update_release.py` with OpenSSL to prepare/sign release assets:
 
 ```text
 python scripts/update_release.py public-key --private-key <protected-key.pem>
-python scripts/update_release.py sign --version <version> --tag <tag> --commit <40-character-commit> --channel stable --private-key <protected-key.pem> --output <fresh-output-folder> --artifact windows-x64=<package.zip> --artifact linux-x86_64=<package.AppImage>
+python patches/release-prep/v1.0.9/update_assets.py sign --packages <release-folder> --commit <40-character-release-source-commit> --private-key <protected-key.pem> --output <fresh-signed-output-folder>
 ```
 
+The v1.0.9 wrapper calls the existing `scripts/update_release.py` signer,
+checks all five finished package hashes, and signs four entries: Windows x64,
+Linux x86_64, Linux ARM64 and Android ARM64. Steam Deck uses the Linux x86_64
+entry. The detached `.sig` contains 128 hexadecimal characters representing
+the 64-byte Ed25519 signature. Its exact manifest bytes, including the final
+newline, must remain unchanged after signing. The wrapper verifies the result
+against the pinned public key without launching the updater or game.
+
+`prepare` writes `DKR-R-update.UNSIGNED.json` for review; it is deliberately
+not named as an installable update and has no fabricated `.sig`. Supply the
+original private key to `sign` to produce the real pair. `verify` checks an
+existing pair and every package again. See the
+[release signing handoff](../patches/release-prep/v1.0.9/UPDATER.txt).
+
 Add `linux-aarch64`, `android-arm64`, `macos-arm64`, `macos-x86_64` or `ios-arm64`
-only when their packages are qualified. Steam Deck uses the Linux x86_64 entry.
+only when their packages are qualified. Do not reuse v1.0.8 Apple packages in the v1.0.9 manifest. Steam Deck uses the Linux x86_64 entry.
 macOS declares its minimum OS in Info.plist, or with `--minimum-os`. Linux
 packages currently require glibc 2.38; update the manifest requirements when the
 toolchain changes.
@@ -104,7 +124,7 @@ rotation needs an old-key-signed bridge release; `--verification-key` can select
 that previous public key for the bridge. Don't simply replace the public key
 and publish a release old clients cannot verify.
 
-For Android, retain the actual distributed APK signing key or an authorised
+For v1.0.9 Android, versionCode is `1090001`. Retain the actual distributed APK signing key or an authorised
 Android signing lineage, and increment `versionCode` for every published APK.
 A fresh CI runner's newly generated debug key is not upgrade-compatible just
 because the application ID matches.

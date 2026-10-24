@@ -1,5 +1,38 @@
 # DKR-R changelog
 
+## 1.0.9 — 24 October 2026
+
+- Add worldwide Public/Friends lobby browsing, distinct signed-in account counts,
+  shared Discord sign-in and Private/Public hosting to the existing launcher.
+- Keep private rooms out of public lists; preserve host approval, friend/code
+  admission, role/capacity checks and verified mod/save preparation.
+- Add the private website/API directory for discovery and admission. Existing
+  peer transport/Rollback runs gameplay; FTP mod uploading is unchanged.
+- Retain up to four racers/eight spectators, spectator cameras and confirmed
+  host-approved swaps. Running-spectator directory entry is separately gated.
+- Offer Rollback as the public host mode, removing the old backend selector.
+- Add the shared connection Scoreboard with separate racer/spectator grades.
+- Retain countdown/start, checkpoint-clock, party departure and lobby-return
+  repairs; preserve approved preparation across benign account/roster refreshes.
+- Add custom .dkrkart cars, native Track Select picking, CPU choices, reviewed
+  seating/wheel/LOD handling and Store Vehicles installation/update/repair.
+  Hover/plane exports remain reserved; custom cars do not change handling.
+- Add 94 local achievements, explicit existing-progress recognition, pinned
+  goals and safe progress import/export, without account synchronisation.
+- Add installed-content texture export, live capture, dump browsing and starter
+  replacement packs, preserving edited Working files on re-export.
+- Retain SDK 2/API 1 compatibility, shared personal saves, isolated online/dev
+  progress, Camera++, previous presentation fixes and the Windows memory fix.
+- Retain merged upstream track-ID safety/failure-safe imports, saved graphics
+  preset display and reviewed TLS integration.
+- Preserve website batch entry, image clear/reset, five automatic upload retries,
+  FTP file usage filters and the Vehicles label with stored category ID `legacy`.
+- Rebuild Windows x64, both Linux AppImages, Steam Deck and Android ARM64. APK
+  versionCode is 1090001 with the original signing identity. Linux ABI requirements
+  are GLIBC 2.38 and GLIBCXX_3.4.32. New Apple packages were not built in this pass.
+- Refresh current guides and release/signing instructions; preserve dated records
+  and separate static build verification from physical-device acceptance.
+
 ## 1.0.8 — 20 October 2026
 
 - Fix Windows startup committing the 4 GiB guard/address reservation.
