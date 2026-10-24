@@ -8,6 +8,12 @@
   </a>
 </p>
 
+<p align="center">
+  <a href="https://positron-portal.com/dkr-r/">
+    <img src="https://img.shields.io/badge/OPEN%20MOD%20STORE-2EA44F?style=for-the-badge" alt="Open Mod Store">
+  </a>
+</p>
+
 ## DKR-R v1.0.9 Release Build
 
 Public lobbies now live in the launcher. Sign in with Discord, open **DKR-R
