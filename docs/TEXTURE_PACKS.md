@@ -1,6 +1,6 @@
 # CRT filters and texture packs
 
-## v1.0.7 release contract
+## v1.0.9 release contract
 
 Store-installed packs retain friendly names and managed installation receipts. Reinstall/update targets the selected owned copy. Recognised liquid animation families stay original until all matching HD frames are resident; incomplete families remain consistently original. Pack order and normal Stream/Stall/Preload policy are retained.
 
@@ -188,3 +188,38 @@ temporary directory beneath `texture-packs`. Absolute paths, parent traversal,
 duplicate variants, unsafe image dimensions, alias collisions, archives over
 4 GB, unreadable ZIPs, and malformed native databases are rejected before
 renderer activation.
+
+## Texture Dumping — v1.0.9
+
+Expand **Texture Dumping** beneath pack controls. Its **Export**, **Capture**
+and **My Dumps** tabs share active jobs; switching tabs/closing the section
+does not cancel an export or capture.
+
+Choose your original ROM first. **Export textures** can include original stored
+textures, installed/disabled tracks, characters and custom cars. Exporting does
+not enable a mod or run code. **Include source artwork** retains exact available
+embedded/companion PNGs; missing high-resolution art is not reconstructed.
+Skipped/unsupported items appear in `dump.json` rather than being marked complete.
+
+**Capture next game** records eligible original decoded textures encountered
+while you play, even with an HD pack enabled. It does not capture screenshots,
+CRT output, depth buffers or texture variants never encountered. Export filters
+do not filter live capture. Stop capture in the overlay and let queued writes
+finish; resume/revisit missed textures if the writer paused.
+
+The writable `texture-dumps` workspace has **Originals**, editable **Working**,
+optional **Source_Artwork** and ownership/identity reports in `dump.json`.
+Re-export preserves Working edits. My Dumps can reopen an existing workspace,
+search/page previews and refresh changed files. Browsing does not modify PNGs.
+
+Edit Working, then choose **Create starter pack** and import `Texture-Starter.zip`
+through the normal texture-pack importer. Rebuild/re-import after further edits.
+Only supported known/observed identities are included. Shared hashes replace
+all matching uses; a character folder does not make a shared hash exclusive.
+Water replacements still need the existing complete-family rules.
+
+Keep original-art dumps private. The starter omits ROMs and source reports,
+but unedited Working images can still be original game art. Distribute only
+replacement artwork you have permission to share. The detailed original
+[texture-tool implementation/checklist](../patches/texture-dumping/TEXTURE-DUMPING.txt)
+is retained as engineering history, not v1.0.9 hardware qualification.

@@ -130,3 +130,12 @@ invalidates that decision. No extra water GPU pass was added for this fix.
 Logo scenes, moving Start Menu names and credits use the selected viewport.
 The copyright/recompilation text has a translucent rounded backing. Credits
 include full-width fades and lower sky, with bounded native readback.
+
+## v1.0.9 spectator and custom-car presentation
+
+Spectators choose All splits, Follow player or the T.T.-style director without
+changing racing input. Custom GPU-rendered cars use safe racer cameras in the
+director; original vehicles can use its cinematic view. Custom cars replace
+visuals, not physics, and their online choices remain admitted session state.
+The saved graphics preset display and previous water/camera fixes are retained.
+See [Spectators](SPECTATORS.md) and [Vehicles](VEHICLES.md).

@@ -1,8 +1,12 @@
 # DKR-R development guide
 
-## v1.0.7 release contract
+## v1.0.9 release contract
 
-The final release recipe and prepared-input contract are in patches/release-prep/v1.0.7/BUILDING.txt. The SDK 2 Bible/public headers describe supported tools and API 1 compatibility. Gameplay/hardware acceptance is owner-led; compilation and static inspection are not runtime acceptance.
+The final release recipe and prepared-input contract are in patches/release-prep/v1.0.9/BUILDING.txt. The SDK 2 Bible/public headers describe supported tools and API 1 compatibility. Gameplay/hardware acceptance is owner-led; compilation and static inspection are not runtime acceptance.
+
+All edits, including documentation, go through authored Patch Pipeline layers.
+The v1.0.9 documentation overlay records a recoverable baseline and allowed
+document changes; it does not alter native compile inputs.
 
 Keep the changes focused and reproducible. Project-owned runtime code lives in
 `runtime-recomp/src/game`, tests in `runtime-recomp/tests`, release assets in

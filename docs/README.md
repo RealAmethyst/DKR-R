@@ -1,6 +1,6 @@
 # DKR-R documentation
 
-Start here for the current v1.0.7 instructions. The older plans and playtest logs
+Start here for the current v1.0.9 instructions. The older plans and playtest logs
 are still useful, but they aren't the current feature list.
 
 ## Playing and settings
@@ -16,12 +16,17 @@ are still useful, but they aren't the current feature list.
 | [Controls](CONTROLLERS.md) | Profiles, N64 setup, SDL2/SDL3, gyro and Android touch groups. |
 | [Saves and portable mode](SAVES.md) | Offline/online/modded storage, recovery and profile switching. |
 | [Application updates](UPDATES.md) | GitHub checks, signed packages, installation, backups and publishing. |
-| [Texture packs](TEXTURE_PACKS.md) | Imports, priorities, CRT filters and track-owned HD packs. |
+| [Texture packs](TEXTURE_PACKS.md) | Imports, priorities, CRT filters, track-owned HD packs and texture export/capture. |
 | [Custom tracks and characters](LEGACY-MODS-BETA.md) | Legacy imports, roster browsing, AI, adapters and mod management. |
 | [Magic Codes](MAGIC_CODES.md) | Launch selection, online rules and one-shot actions. |
-| [DKR-R Online](ONLINE_MULTIPLAYER.md) | Quick Join/friends, backends, host mods, saves and connection limits. |
+| [DKR-R Online](ONLINE_MULTIPLAYER.md) | Public/private hosting, Rollback, Scoreboard, session mods, saves and connection limits. |
+| [Public lobbies](PUBLIC_LOBBIES.md) | Shared Discord sign-in, Public/Friends, account count and directory privacy. |
+| [Spectators](SPECTATORS.md) | Watching, cameras, host-approved swaps and late-join gates. |
+| [Vehicles](VEHICLES.md) | Custom .dkrkart cars, native selection and managed Store installations. |
+| [Achievements](ACHIEVEMENTS.md) | 94 local goals, recognition, notifications and progress protection. |
+| [Library administration](MOD_LIBRARY_ADMIN.md) | FTP uploads, batch entries, image controls, usage filters and deployment. |
 | [Troubleshooting](TROUBLESHOOTING.md) | Failures, support exports and the correct runtime logs. |
-| [Platform support](PLATFORMS.md) | Desktop delivery versus Android/ARM previews and macOS source support. |
+| [Platform support](PLATFORMS.md) | v1.0.9 packages, Linux ABI, Android identity and separate Apple release coverage. |
 
 ## Track Lab and development
 
@@ -48,6 +53,8 @@ are still useful, but they aren't the current feature list.
 
 ## Releases and credits
 
+- [v1.0.9 release notes](PUBLIC-1.0.9-NOTES.txt), [v1.0.8 notes](PUBLIC-1.0.8-NOTES.txt) and
+  [documentation audit](DOCUMENTATION-1.0.9.md).
 - [Changelog](../CHANGELOG.md), [beta 5 notes](BETA5-1.0.7.txt), [beta 4 notes](BETA4-1.0.7.txt), [beta 3 notes](BETA3-1.0.7.txt), [beta 2 notes](BETA2-1.0.7.txt) and
   [1.0.7 public release notes](PUBLIC-1.0.7-NOTES.txt).
 - [Release validation](../RELEASE-VALIDATION.md) separates recorded automated
@@ -56,10 +63,11 @@ are still useful, but they aren't the current feature list.
 - [Third-party credits](../THIRD_PARTY.md), [project licence](../LICENSE.md)
   and [runtime licensing notice](../runtime-recomp/COPYING-NOTICE.md).
 
-The 1.0.7 release targets Windows x64, Linux x86_64/ARM64 AppImages, Steam Deck
-and Android ARM64. See the platform guide and validation record for actual checks.
-Experimental Rollback and hardware ray tracing remain experimental.
-Android/ARM/macOS support must not be inferred from a desktop test count.
+The v1.0.9 build set contains Windows x64, Linux x86_64/ARM64 AppImages,
+Steam Deck and Android ARM64. Published v1.0.8 macOS/iOS packages exist; new
+Apple packages were not built in this pass. See the platform guide and validation
+record for exact coverage. Hardware ray tracing and unqualified online graphics
+experiments must not be inferred from a successful desktop compile.
 
 ## Current code-mod API
 

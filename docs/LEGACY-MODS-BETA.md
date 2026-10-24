@@ -1,6 +1,6 @@
-# Custom tracks, characters and the Mod Store
+# Custom tracks, characters, vehicles and the Mod Store — v1.0.9
 
-Open **Mods / Hacks** to manage tracks, characters and Custom Magic Codes.
+Open **Mods / Hacks** to manage tracks, characters, Vehicles and Custom Magic Codes.
 The **Mod Store** brings the library into the launcher. Choose grid view or
 the detailed browse-and-inspect view, then search/filter the catalogue.
 
@@ -24,6 +24,15 @@ or recovery folders while diagnosing an installation.
 Discord sign-in provides account features, reviews and requests. Moderators
 and admins see only the library actions their server-side role allows. A
 launcher checkbox cannot grant moderation rights.
+
+## Vehicles
+
+Import supported `.dkrkart` cars directly or from ZIPs, or install from the
+Store's Vehicles category. Managed cars use the same receipts/Update/Repair
+workflow. Enable them before Track Select; Vanilla remains available. Custom
+cars change visuals, not handling, and Adventure does not use them. Hover/plane
+formats are reserved. The stored category ID remains `legacy` for compatibility.
+See [Vehicles](VEHICLES.md).
 
 ## Track and character imports
 

@@ -1,20 +1,30 @@
 # DKR-R platform support
 
-We're keeping Windows and Linux together. Linux releases must include an
-AppImage, not just a loose executable. Android and Linux ARM64 have separate
-ports, and macOS now has a source/build workflow.
+The v1.0.9 Release Build set was prepared on 24 October 2026. Windows and Linux
+ship together; both Linux architectures have AppImages. Keep the complete
+package, including its private helpers and required notices.
 
-1.0.7 release packaging targets (20 October 2026):
-
-| Platform | Current delivery | Important limits |
+| Platform | v1.0.9 delivery | Requirements and coverage |
 |---|---|---|
-| Windows x64 | Public ZIP | Use the whole package, including private workers. |
-| Linux x86_64 | Public AppImage | Requires glibc 2.38+ and a working compatible Vulkan driver. |
-| Linux ARM64 | ARM64 AppImage | Needs glibc 2.38+, compatible 64-bit Linux/Vulkan and physical-device qualification. Cross-build and QEMU checks are not a physical GPU test. |
-| Steam Deck | Linux x86_64 AppImage payload | A separate named artifact, not a different engine build. SteamOS/controller integration needs a physical-device check. |
-| Android ARM64 | APK; see final release receipt for versionCode | Android 9+, ARM64 OS and compatible Vulkan features are required. Startup, driver behaviour and sustained performance vary; desktop parity is not established. Existing app ID/signature are retained. |
-| macOS | Source/build-kit support | Requires an Apple build host. No newly qualified macOS binary is included in this delivery; integrated Experimental Rollback is currently gated out on Apple. |
-| iOS | Merged sideload source port | Contributor validation is recorded separately. No newly built IPA is supplied in this pass. |
+| Windows x64 | `DKR-R-1.0.9-Windows-x64.zip` | Windows 10+, compatible Vulkan driver; extract the entire ZIP. |
+| Linux x86_64 | `DKR-R-1.0.9-Linux-x86_64.AppImage` | GLIBC 2.38, GLIBCXX_3.4.32 and a compatible Vulkan driver. |
+| Linux ARM64 | `DKR-R-1.0.9-Linux-aarch64.AppImage` | 64-bit Linux/Vulkan, the same ABI requirements; physical GPU acceptance is separate. |
+| Steam Deck | `DKR-R-1.0.9-SteamDeck-x86_64.AppImage` | Exact Linux x86_64 payload; SteamOS/controller/gyro acceptance needs the device. |
+| Android ARM64 | `DKR-R-1.0.9-Android-arm64.apk` | Android 9+ (API 28), ARM64 OS and compatible Vulkan; versionCode 1090001, non-debuggable Release. |
+| macOS | No new package in this build set | Published v1.0.8 includes a notarised ARM64 ZIP. A v1.0.9 package needs an Apple host and current feature qualification. |
+| iOS | No new package in this build set | Published v1.0.8 includes an ARM64 IPA. Sideload source targets iOS 18+; v1.0.9 device packaging/qualification remains separate. |
+
+The previous Apple assets are not v1.0.9 binaries and must not be renamed or
+included in its update manifest. Source compile-check workflows do not produce
+qualified release packages. Current public Rollback integration remains gated
+out on Apple; a source port alone does not establish parity with this release.
+
+Android retains application ID `io.github.thatguymcd.dkrr.preview` and the
+distributed signing certificate. The historical `.preview` ID is retained for
+upgrade continuity; do not change it just to make the package name look stable.
+Static checks verify the original signer, APK layout and at least 16 KiB native
+load alignment. They do not establish device performance or system-installer
+acceptance. See [release validation](../RELEASE-VALIDATION.md).
 
 Both clean US v1.0 and US Rev A/v1.1 ROMs are supported by the native revision
 selection. Owning a 64-bit CPU is not enough if the OS or GPU driver lacks the
@@ -43,9 +53,9 @@ build/version code and scene. Reopen the app and use
 Do not keep retrying a diagnostic action that itself crashes.
 The [troubleshooting guide](TROUBLESHOOTING.md) explains what to send.
 
-Android's integrated rollback port does not establish cross-architecture
+Android's integrated Rollback port does not establish cross-architecture
 netplay compatibility: admission still checks architecture and floating-point
-mode. Backgrounding Android ends an active experimental match rather than
+mode. Backgrounding Android ends an active Rollback match rather than
 leaving other racers waiting on a suspended app.
 
 ## Building and qualification
