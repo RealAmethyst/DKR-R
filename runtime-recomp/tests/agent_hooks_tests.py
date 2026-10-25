@@ -299,6 +299,7 @@ class ProcessTreeTests(unittest.TestCase):
     def test_timeout_kills_formatters_before_snapshots_are_restored(self):
         spec = importlib.util.spec_from_file_location("post_edit_check", HOOKS / "post_edit_check.py")
         module = importlib.util.module_from_spec(spec)
+        sys.modules["post_edit_check"] = module  # dataclasses resolve their module by name
         spec.loader.exec_module(module)
         with tempfile.TemporaryDirectory() as temp:
             target = Path(temp) / "edited.py"
