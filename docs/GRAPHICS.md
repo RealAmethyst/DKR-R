@@ -131,7 +131,7 @@ Logo scenes, moving Start Menu names and credits use the selected viewport.
 The copyright/recompilation text has a translucent rounded backing. Credits
 include full-width fades and lower sky, with bounded native readback.
 
-## v1.0.9 spectator and custom-car presentation
+## v1.0.10 spectator and custom-car presentation
 
 Spectators choose All splits, Follow player or the T.T.-style director without
 changing racing input. Custom GPU-rendered cars use safe racer cameras in the

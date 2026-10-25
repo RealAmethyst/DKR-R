@@ -14,17 +14,16 @@
   </a>
 </p>
 
-## DKR-R v1.0.9 Release Build
+## DKR-R v1.0.10 Release Build
 
-Public lobbies now live in the launcher. Sign in with Discord, open **DKR-R
-Online**, and find a race without exchanging friend or lobby codes. Hosting
-can stay private, and the existing host approval, mod preparation and Rollback
-systems still handle the actual session.
+This update is mainly about getting Online into a much better state. I've
+fixed problems joining modded lobbies, races getting stuck at the start,
+and spectators getting a black screen during custom races. I've also
+tidied up Open Lobbies while keeping the current launcher design.
 
-This release also brings spectators, the Rollback connection Scoreboard,
-custom cars, 94 local achievements and texture authoring tools. It retains
-the Mod Store, SDK 2.0, shared personal saves, Camera++ support, presentation
-improvements and the v1.0.8 Windows startup memory correction.
+Public lobbies, custom cars, achievements, texture tools and the existing
+modding features are all still here. There is no need to reset your saves
+or reinstall your mods.
 
 DKR-R is a native static recompilation of Diddy Kong Racing. Bring your own
 legally obtained **US v1.0 or US Rev A/v1.1 ROM**. No ROM or extracted game
@@ -36,15 +35,15 @@ assets are supplied.
 2. Windows: extract the whole ZIP and start **DKR-R.exe**. Keep `assets` and
    `libexec` together; the private helpers are part of the installation.
 3. Linux / Steam Deck: make the **AppImage** executable and launch it.
-4. Android: back up your saves, then install the compatible signed APK over
-   your existing app. Uninstalling can erase app data.
-5. Add your original ROM in **Play**, choose your controls and start.
+4. Add your original ROM in **Play**, choose your controls and start.
 
-The v1.0.9 build set contains Windows x64, Linux x86_64 and ARM64 AppImages,
-Steam Deck and Android ARM64. Linux needs glibc 2.38, GLIBCXX_3.4.32 and a
-compatible Vulkan driver. macOS and iOS packages exist for v1.0.8; new Apple
-packages are not part of this v1.0.9 build set. See [platform support](docs/PLATFORMS.md)
-for requirements and build coverage.
+v1.0.10 is available for Windows x64, Linux x86_64, Linux ARM64 and Steam
+Deck. Both Linux architectures have AppImages. Linux needs glibc 2.38,
+GLIBCXX_3.4.32 and a compatible Vulkan driver.
+
+Android releases are no longer supported. I'm leaving Android out until
+performance is good enough. There are no new macOS or iOS downloads in
+this release. See [platform support](docs/PLATFORMS.md) for the details.
 
 Accurate keeps the original presentation. Modern offers widescreen,
 interpolated presentation rates and optional graphics settings. **Escape**,
@@ -73,7 +72,7 @@ still prevent direct connections. Joining a running race through the directory
 is separately gated by the service's spectator setting; it never admits a late
 racer. There is no host migration or bundled gameplay relay.
 
-Use matching complete v1.0.9 packages on every peer. Start with the
+Use matching complete v1.0.10 packages on every peer. Start with the
 [Online guide](docs/ONLINE_MULTIPLAYER.md), [public lobby guide](docs/PUBLIC_LOBBIES.md)
 and [spectator guide](docs/SPECTATORS.md).
 
@@ -126,7 +125,7 @@ automatic installation is available. See [Updates](docs/UPDATES.md).
 
 ## Guides and contributing
 
-- [Documentation index](docs/README.md), [v1.0.9 release notes](docs/PUBLIC-1.0.9-NOTES.txt)
+- [Documentation index](docs/README.md), [v1.0.10 release notes](docs/PUBLIC-1.0.10-NOTES.txt)
   and [changelog](CHANGELOG.md).
 - [Troubleshooting](docs/TROUBLESHOOTING.md) and [release validation](RELEASE-VALIDATION.md).
 - [Building](docs/BUILDING.md) and [development](docs/DEVELOPMENT.md).

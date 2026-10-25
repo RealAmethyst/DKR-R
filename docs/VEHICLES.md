@@ -1,6 +1,6 @@
 # Custom vehicles
 
-v1.0.9 supports custom **cars** from Syeo's `.dkrkart` exports, either directly
+v1.0.10 supports custom **cars** from Syeo's `.dkrkart` exports, either directly
 or inside a ZIP. `.dkrhover` and `.dkrplane` are reserved for future formats;
 custom hovercrafts and planes are not supported by this release.
 
@@ -22,7 +22,7 @@ exports retain Vanilla safely rather than hiding guessed model geometry.
 The native wooden picker, car portraits, steering, wheel rotation, seating and
 LOD ownership are part of the accepted vehicle layer. Reimporting an identical
 inner `.dkrkart` both directly and from ZIP does not create two installations.
-Existing cars do not need reimporting just to use v1.0.9.
+Existing cars do not need reimporting just to use v1.0.10.
 
 Enabled cars can be chosen for CPUs in Track Select. A CPU keeps its choice for
 that race and can have another on the next race. This changes appearance, not

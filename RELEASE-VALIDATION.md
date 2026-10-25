@@ -1,82 +1,67 @@
-# v1.0.9 Release Build record — 24 October 2026
+# v1.0.10 Release Build record — 25 October 2026
 
-The release set contains five downloads from four native builds. Compilation,
-linking and static source/binary/package inspection completed. No game,
-launcher, mod, native test executable or AppImage was executed by the release
-tools. The owner reported that the preceding Windows public-lobby pilot worked
-as intended; that does not establish physical-device or multiplayer acceptance
-for every newly rebuilt platform.
+The release uses the accepted playtest.4 Patch Pipeline. It includes Windows
+x64, Linux x86_64 and Linux ARM64 builds. Steam Deck uses the exact Linux
+x86_64 AppImage payload. Android, macOS and iOS are skipped.
 
-| Download | Bytes | SHA-256 |
-|---|---:|---|
-| DKR-R-1.0.9-Windows-x64.zip | 59387124 | `02e6b1071ff447f33ac8cc82ad9ff9d462bd6575f76be1da1a19f6eb12ff903c` |
-| DKR-R-1.0.9-Linux-x86_64.AppImage | 68254200 | `b8c4e57451289d4847ac4b32ede90be33cc25293229c693ee4f795ad9dca1913` |
-| DKR-R-1.0.9-Linux-aarch64.AppImage | 58915336 | `0ccf0736ab9ad776695b27d1f16e333ea2a84b7e7ab05faa73dafb5416538547` |
-| DKR-R-1.0.9-SteamDeck-x86_64.AppImage | 68254200 | `b8c4e57451289d4847ac4b32ede90be33cc25293229c693ee4f795ad9dca1913` |
-| DKR-R-1.0.9-Android-arm64.apk | 48167287 | `359a4904827fe5c71d57a45723e8b889b921a30ea6159424fc86aa2b86a77329` |
+The owner reported that playtest.4 worked well after the spectator fix.
+That feedback covers the tested setup. It does not establish performance or
+compatibility on every device, mod collection or network.
 
-Steam Deck uses the exact Linux x86_64 payload. No new macOS/iOS package was
-built in this pass; the published v1.0.8 Apple packages are separate releases.
-No old Apple asset may be relabelled as v1.0.9 or inserted into its manifest.
+## Source and build checks
 
-## Source and native evidence
+The release layer includes spectator-admission-repair and its complete retained
+chain: offline mod retention, race starts, lobby stability, Track Select music,
+directory, Scoreboard and earlier runtime repairs. The launcher layout remains
+the accepted playtest layout. The release changes version metadata and packaging;
+it does not introduce new gameplay or checkpoint formats.
 
-The [v1.0.9 Patch Pipeline](patches/release-prep/v1.0.9/BUILDING.txt) composes
-over the owner-accepted directory, Scoreboard, checkpoint/start/departure,
-spectator, vehicle, achievement and texture layers. The four source audits
-verified 2,343 existing authored files against a recoverable pre-release
-snapshot, with only three declared release metadata changes. Documentation
-changes are recorded in a subsequent, separate documentation audit.
-Submodule revisions and generated guest/dependency inputs were preserved.
+The source audit recomposes the final production units, checks actual compiler
+bindings and linked feature markers, and runs the retained source/security
+checks. Source snapshots and document change receipts account for the release
+metadata changes. Submodules, RecompiledFuncs and RecompiledPatches are not edited.
 
-All four native binaries contain the same revision-specific owned identities:
+Both ROM revisions retain the accepted playtest.4 peer identities. Online still
+enforces build/content/architecture compatibility. Match the complete v1.0.10
+packages on all test machines.
 
-- v77: `e76a0d88cfabc0206896dbecfb66db0f3c0e2453348734270d08528c696c9048`
-- v80: `a299a66dad59854bb88fb8b91ac23767758010c5f607ad949ac03685d16f774c`
-- Directory contract: `a374fe19a1037bbff9dffb4190657458e42adafdbf0821c9017f41d65fa61f2e`
-- Scoreboard contract: `4326fab2f6776953b0d3676daf417c5911b1d2a57d76279c8c484e0037ccf083`
+## Automated regression checks
 
-Static ELF inspection covered 99 x86_64 and 67 ARM64 ELF files, with no unresolved
-non-system dependencies in their packaged trees. Both require GLIBC 2.38 and
-GLIBCXX_3.4.32; the AppImages do not supply the host graphics driver or glibc.
+Windows and Linux x86_64 run the production-code synthetic spectator admission
+and handler fixtures, race-start regression fixtures and offline-retention
+fixtures. The old resident-music and race-release implementations are negative
+controls: they must still reproduce their original failures. These use synthetic
+WAVs, files and owner hooks, without running a game, user ROM or RSP.
 
-Android is a non-debuggable Release APK, versionName `1.0.9`, versionCode
-`1090001`, application ID `io.github.thatguymcd.dkrr.preview`. Its certificate
-SHA-256 is `b4e82ec59de3b8cdbe2ad1c7e84e0eba271cde79da64aea1811c81aa3b82e262`,
-verified against the earlier distributed APKs. All four native libraries have
-at least 16 KiB PT_LOAD alignment. APK/ZIP metadata and signer continuity passed.
+Release tooling checks version metadata, updater signing and package ownership.
+The final Windows ZIP is checked for CRC and its complete updater file table.
+Both Linux architectures receive ELF/dependency/ABI inspection and AppImage
+SquashFS checks. Packaged worker capability checks are ROM-free. ARM64 execution
+under emulation, where recorded, is not physical ARM64 GPU acceptance.
 
-Private build receipts, snapshots, symbol files and detailed dependency reports
-are outside the public packages. Package checks reject ROMs, personal saves,
-profiles, credentials, installed mod libraries and private diagnostics.
+Exact results, hashes, package sizes and test receipts are in the external
+release folder's VALIDATION.txt and Evidence directory. A compile-only result
+must not be reported as a passed gameplay test.
 
-## Service and hardware scope
+## Update files and publication
 
-The directory's recorded local Cloudflare runtime suites cover 83 normal,
-89 separately gated and 3,092 lease/load assertions, plus 21 existing-library
-regression checks. These include synthetic concurrent capacity, account/room
-leases, hibernation and preserved library API behaviour. They are local backend
-results, not real-world geographic routing or native gameplay tests.
+DKR-R-update.json and DKR-R-update.sig use the existing trusted Ed25519 key.
+The stable manifest names the exact Windows/Linux packages and committed
+release source, under tag Version1.0.10. Steam Deck uses linux-x86_64. There
+are no Android or Apple entries. The private key stays outside source/packages.
 
-The owner deployed the API and reported the public-lobby pilot working. The
-running-spectator service flag remains separately controlled; no assumption is
-made that it is enabled in production. FTP upload behaviour is retained.
+Signing and verification happen after the package bytes are final. A release
+handoff is not a published GitHub release. The signed-pair verification receipt
+and SHA256SUMS.txt accompany the downloads. The maintainer uploads the files
+and checks the release before publishing it.
 
-Physical ROM import, both-revision play, GPU/audio, controller/touch, native
-TLS/keyring behaviour, suspend/resume, sustained performance, WAN connectivity,
-swaps, checkpoints and updater installation still need acceptance on the
-actual target hardware. Follow [platform support](docs/PLATFORMS.md),
-[Online](docs/ONLINE_MULTIPLAYER.md) and [Updates](docs/UPDATES.md).
+## Final device checks
 
-## Publishing and update assets
+Before public rollout, check the final packages with a Windows/Linux modded
+lobby, a fresh spectator cache, custom music, race finish, track changes,
+rejoining and offline copies left enabled. Include Koopa Troopa Beach, a stock
+track, both supported ROM revisions and Steam Deck where available. Verify
+the v1.0.9 update prompt/install/restart preserves user data. Those final-package
+checks remain separate from the accepted playtest and automated fixtures.
 
-The manifest must name these exact qualified package bytes and a committed
-release source tree. `DKR-R-update.sig` must be a valid Ed25519 signature using
-the existing pinned release key. An old signature, public key or checksum is
-not a substitute. A separate signing receipt records verification; this build
-record does not imply a signature, GitHub publication, tag, FTP upload or API
-deployment was performed by the build tools.
-
-The [v1.0.8 build record](docs/history/RELEASE-VALIDATION-1.0.8.md) is retained
-verbatim as historical evidence. Earlier stable records remain under
-`patches/startup-memory/history` and `patches/release-prep/v1.0.7/history`.
+The [v1.0.9 record](docs/history/RELEASE-VALIDATION-1.0.9.md) is preserved.

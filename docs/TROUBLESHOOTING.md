@@ -1,11 +1,29 @@
 # Troubleshooting DKR-R
 
-## v1.0.9 release contract
+## v1.0.10 release contract
 
 Normal mods share one personal Adventure. Check portable/profile location and Backups & Recovery before restoring. Keep installation receipts/recovery folders. Export logs/support details; report the exact release, ROM revision, course, packs and settings. The accepted HD-water startup fix is included; a hardware-specific problem still needs its own report.
 
 Start with the symptom and keep the original data. Please don't delete your
 saves or whole profile to troubleshoot a graphics, mod or connection failure.
+
+## Modded joins, race starts and spectator black screens
+
+Check that everyone has the complete v1.0.10 package first. This release
+includes the accepted playtest.4 fixes. Keep the downloaded offline-mod
+option enabled if you want those copies; matching installed content no
+longer causes the old identity-conflict warning. Genuine conflicts and
+damaged files are still reported without replacing your offline mods.
+
+If joining fails, use **Retry Join** and **Copy Join Diagnostics** in
+Session mods. Send the full host and affected client/spectator logs from
+the same attempt. Include the track, enabled mods, role and whether the
+problem happened on first join, race start or a later track change.
+Please don't delete your whole mod library or turn off safeguards.
+
+A spectator error after five failed recoveries includes the reason. The
+log also records `[spectator][music]`, `[spectator][admission]` and
+`[spectator][playback]`. A race-start stall needs both racing logs too.
 
 ## ROM rejected
 
@@ -52,7 +70,7 @@ Use compatible complete packages and the same original ROM revision.
 The host creates the lobby after choosing mods/rules; changing them requires a
 new lobby. Clients must complete consent, preparation and verification.
 
-v1.0.9 uses Rollback; the old host-backend selector is removed.
+v1.0.10 uses Rollback; the old host-backend selector is removed.
 Try automatic input delay and a suitable prediction window for your route.
 A bounded input wait, renderer slowdown and scene-loading barrier are different
 problems: record the network overlay state and exact scene.

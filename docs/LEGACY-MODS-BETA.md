@@ -1,4 +1,4 @@
-# Custom tracks, characters, vehicles and the Mod Store — v1.0.9
+# Custom tracks, characters, vehicles and the Mod Store — v1.0.10
 
 Open **Mods / Hacks** to manage tracks, characters, Vehicles and Custom Magic Codes.
 The **Mod Store** brings the library into the launcher. Choose grid view or

@@ -146,3 +146,6 @@ runtime-recomp/build/
 # moved - and docs/ASSET_POLICY.md forbids committing extracted maps. They are
 # local test artifacts; rebuild them from Blender rather than sharing them.
 /custom-tracks/
+
+# Local Cloudflare development state
+/.wrangler/

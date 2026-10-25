@@ -1,5 +1,24 @@
 # DKR-R changelog
 
+## 1.0.10 — 25 October 2026
+
+This update is mainly about Online stability. I've kept the current launcher
+design and brought the accepted playtest.4 fixes into the release.
+
+- Fixed modded lobby preparation getting stuck and improved verified cache reuse.
+- Added clearer join progress, Retry Join and Copy Join Diagnostics.
+- Fixed races failing to start when spectators were in the lobby.
+- Fixed spectators getting a black screen and no audio during custom races.
+- Fixed matching downloaded mods conflicting with existing offline copies.
+- Tidied up Open Lobbies, keeping more space for the lobby list.
+- Kept the earlier Track Select custom-music fix and existing online safeguards.
+- Updated the guides, Windows/Linux packages and signed updater metadata.
+
+Windows x64, Linux x86_64/ARM64 and Steam Deck are included. Android is no
+longer supported; no new macOS/iOS downloads are included. Use matching
+complete v1.0.10 packages for Online. Saves and installed mods can stay.
+
+
 ## 1.0.9 — 24 October 2026
 
 - Add worldwide Public/Friends lobby browsing, distinct signed-in account counts,

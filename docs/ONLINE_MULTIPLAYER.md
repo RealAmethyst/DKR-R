@@ -1,4 +1,4 @@
-# DKR-R Online — v1.0.9
+# DKR-R Online — v1.0.10
 
 Open **DKR-R Online** in the existing launcher. Public/Friends browsing,
 Private/Public hosting, Discord sign-in and a total online count sit alongside
@@ -6,7 +6,7 @@ the existing lobby controls. There is no separate website page to use.
 
 Races and minigames support up to four racing ports; Adventure supports two
 racers. A spectator-capable lobby can also have eight spectators. Everyone
-needs a compatible complete v1.0.9 package, supported original ROM revision,
+needs a compatible complete v1.0.10 package, supported original ROM revision,
 admitted gameplay rules and verified session mods. Keep `assets` and private
 workers with the installation.
 
@@ -35,6 +35,25 @@ on several launchers counts once; a crash or sleeping device can remain counted
 until its lease expires, normally within 60 seconds. **Disconnect Online**
 removes this instance. See [public lobbies and privacy](PUBLIC_LOBBIES.md).
 
+## Joining with mods
+
+The Session mods dialog shows what is happening, how long it has taken,
+and how much data was downloaded or reused. A busy host can queue your
+request. Temporary transfers can be repaired up to five times; if a join
+fails, use **Retry Join** or **Copy Join Diagnostics**. Verified completed
+downloads can be reused when you retry. A first join with lots of mods
+can still take longer while they are downloaded and prepared.
+
+You can leave **Keep downloaded mods for offline play** enabled. Matching
+installed copies are reused, and missing selected content is kept as
+inactive entries after lobby admission. Your existing names, enabled
+mods and saves stay as they are. A real content conflict is reported
+without replacing the existing files or stopping lobby entry.
+
+In Open Lobbies, **Join as** and **Browse lobbies** sit under your account
+on wide windows. **Before you race** sits below **Your online view**. On
+narrow windows, the lobby filters remain above the list.
+
 ## Host a lobby
 
 1. Enable the mods you want before hosting. In **Host settings**, choose racer
@@ -57,7 +76,7 @@ without remapping physical controllers to local ports.
 
 The public host mode is **Rollback**. It uses the existing owned replay backend
 internally named `ExperimentalRollback`. The old Auto, Host Prediction and
-Strict Input Sync selector is no longer offered for v1.0.9 public hosting.
+Strict Input Sync selector is no longer offered for v1.0.10 public hosting.
 Old wire enum values and historical investigations have not been reinterpreted.
 Do not change configuration files to bypass the supported-mode gate.
 

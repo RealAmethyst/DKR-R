@@ -29,6 +29,19 @@ confirmed checkpoint, then catches up. A late racing-role request stays closed.
 A slow spectator is outside racing input/scene agreements and can request a
 fresh checkpoint rather than holding racers indefinitely.
 
+## Custom tracks and music
+
+v1.0.10 includes the playtest.4 spectator fix. A spectator now prepares
+the selected track's verified music when joining the confirmed race
+state. This fixes the black screen and missing audio that could last
+until the results screen on a fresh spectator machine.
+
+A spectator that fails to recover five times without making playback
+progress stops with the actual reason. The racers carry on. If it still
+happens, send the spectator's runtime.log and the host log from the same
+race, including the track and mod selection. Changing cameras does not
+repair a checkpoint or missing music resource.
+
 ## Swap a racing place
 
 A racer can offer a place; a spectator can request one. The host approves in
