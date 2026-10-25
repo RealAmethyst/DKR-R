@@ -51,9 +51,9 @@ class RepositoryTests(unittest.TestCase):
         self.assertEqual(check_pinned_bytes.check(ROOT), [])
 
     def test_each_kind_of_pin_is_found(self):
-        sources = {source for _, source in check_pinned_bytes.pins(ROOT).values()}
+        sources = {pin.source for pin in check_pinned_bytes.pins(ROOT).values()}
         self.assertIn("patches/manifest.json", sources)
-        self.assertIn("its file name", sources)
+        self.assertIn("patches/release-prep/v1.0.7/source-capsule-r2/manifest.json", sources)
         self.assertTrue(any(source.startswith("modding/reference-us-v") for source in sources), sources)
 
     def test_pre_commit_never_hands_a_pinned_file_to_a_fixer(self):
@@ -130,6 +130,35 @@ class CheckerTests(unittest.TestCase):
         status, err = run_checker(self.root)
         self.assertEqual(status, 1)
         self.assertIn("pinned by its file name", err)
+
+    def write_capsule_manifest(self, base_text):
+        capsule = {
+            "roles": {
+                "ROLE": {
+                    "object.txt": {"sha256": CAPSULE_NAME, "object": f"{CAPSULE_NAME}.txt"},
+                    "base.py": {"sha256": "0" * 64, "base": "src/base.py", "base_sha256": sha(base_text)},
+                }
+            }
+        }
+        write(self.root / "patches/release-prep/v1/source-capsule-r1/manifest.json", json.dumps(capsule).encode())
+
+    def test_deleted_object_the_capsule_manifest_references_fails(self):
+        self.write_capsule_manifest(b"base\n")
+        write(self.root / "src/base.py", b"base\n")
+        self.assertEqual(run_checker(self.root), (0, ""))
+        (self.root / f"patches/release-prep/v1/source-capsule-r1/{CAPSULE_NAME}.txt").unlink()
+        status, err = run_checker(self.root, "patches/release-prep/v1/source-capsule-r1/manifest.json")
+        self.assertEqual(status, 1)
+        self.assertIn(f"{CAPSULE_NAME}.txt: missing", err)
+
+    def test_capsule_base_is_compared_after_crlf_normalisation(self):
+        self.write_capsule_manifest(b"base\n")
+        write(self.root / "src/base.py", b"base\r\n")
+        self.assertEqual(run_checker(self.root), (0, ""))
+        write(self.root / "src/base.py", b"base  \n")  # what a formatter might leave
+        status, err = run_checker(self.root, "src/base.py")
+        self.assertEqual(status, 1)
+        self.assertIn("pinned by patches/release-prep/v1/source-capsule-r1/manifest.json", err)
 
     def test_missing_pinned_file_fails(self):
         (self.root / "patches/dep/0001.patch").unlink()
