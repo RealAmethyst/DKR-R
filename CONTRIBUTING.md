@@ -23,7 +23,9 @@ can merge.
 
 You need Git and Python 3.10 or newer. `Setup-macOS.sh`, `Setup-Linux.sh` and
 `Setup-Windows.cmd` install the git hooks after the prerequisite checks (pass
-`--skip-hooks` to opt out). Then:
+`--skip-hooks` to opt out), or run `python3 scripts/bootstrap_hooks.py`
+directly. With a global `core.hooksPath`, git won't run the repository's hooks,
+and the bootstrap prints how to opt this checkout in. Then:
 
 ```sh
 python3 scripts/check.py               # pattern guard, tooling, metadata and asset checks

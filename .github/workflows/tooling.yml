@@ -13,7 +13,7 @@ concurrency:
   cancel-in-progress: true
 jobs:
   # Required check. Every step that fails here is green on main today; checks
-  # that still need the A2/B9 autofix commits run in the advisory step below.
+  # that still need the B9 autofix commit run in the advisory step below.
   lint:
     runs-on: ubuntu-24.04
     timeout-minutes: 10
@@ -39,6 +39,12 @@ jobs:
           echo "$tool_dir/bin" >>"$GITHUB_PATH"
       - name: Ruff (E, F, W, I with the pyproject.toml baseline)
         run: ruff check --output-format=github
+      - name: Ruff format
+        run: ruff format --check
+      # Same scope as the pre-commit shfmt hook. No flags, so shfmt reads the
+      # [*.sh] section of .editorconfig.
+      - name: shfmt
+        run: git ls-files -z '*.sh' ':(exclude)patches/' ':(exclude)extern/' ':(exclude)tests/fixtures/' | xargs -0 shfmt -d
       - name: Pattern guard and tooling tests
         run: python3 scripts/check.py --suite guard,tooling
       # The tree check above can't tell new baseline entries from old ones, so
@@ -53,15 +59,13 @@ jobs:
           args=(--diff "$BASE_SHA")
           if [[ "$TRANSITION_LAYER" == true ]]; then args+=(--transition-layer); fi
           python3 scripts/pattern_guard.py "${args[@]}"
-      # Report only until the autofix commits land (A2 for Python and shell,
-      # B9 for C/C++ and CMake). Each line moves into a blocking step, or into
-      # check.py --suite format, once its baseline commit has made it green.
+      # Report only until their baseline commits land: B9 for C/C++ and CMake,
+      # and shellcheck once the remaining warnings are fixed by hand. Each line
+      # moves into a blocking step, or into check.py --suite format, once green.
       - name: Format drift report (advisory)
         continue-on-error: true
         run: |
           status=0
-          ruff format --check --quiet || status=1
-          git ls-files -z '*.sh' ':(exclude)patches/' | xargs -0 shfmt -d || status=1
           git ls-files -z '*.sh' ':(exclude)patches/' | xargs -0 shellcheck || status=1
           git ls-files -z 'CMakeLists.txt' '*/CMakeLists.txt' '*.cmake' ':(exclude)extern/' ':(exclude)patches/' |
             xargs -0 gersemi --check || status=1
