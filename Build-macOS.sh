@@ -66,6 +66,8 @@ EOF
   esac
   shift
 done
+# Prints the hook install command if the hooks are missing; never fails Build.
+if [[ -f "${project_root}/scripts/bootstrap_hooks.py" ]]; then python3 "${project_root}/scripts/bootstrap_hooks.py" --check || true; fi
 jobs="$(dkr_apple_build_jobs "$jobs")"
 export CMAKE_BUILD_PARALLEL_LEVEL="$jobs"
 dkr_require_macos

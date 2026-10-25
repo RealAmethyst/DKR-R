@@ -23,8 +23,9 @@ python3 scripts/check.py --list
 python3 scripts/check.py --suite tooling
 ```
 
-The default command runs synthetic tooling tests, release metadata checks and
-the source asset scan. It stops at the first failure and never downloads
+The default command runs the pattern guard, synthetic tooling tests, release
+metadata checks and the source asset scan. `--suite` repeats and takes comma
+lists (`--suite guard,tooling`). It stops at the first failure and never downloads
 anything or changes dependency checkouts. `--list` shows the selected commands.
 On Windows, use `python` in place of `python3`; POSIX-only tests report skips.
 To run the Track Lab Python suites, use `--suite track-lab`. Missing private

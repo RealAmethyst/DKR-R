@@ -149,3 +149,8 @@ runtime-recomp/build/
 
 # Local Cloudflare development state
 /.wrangler/
+
+# AI coding agents: personal permissions and per-session hook state
+/.claude/settings.local.json
+/.claude/session-base
+/.claude/session-base.*.tmp
