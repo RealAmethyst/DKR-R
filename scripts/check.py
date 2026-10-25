@@ -20,6 +20,23 @@ TOOLING_TESTS_SKIP = {
     "water_profile_policy_tests.py": "needs both ELFs and their water policies",
 }
 TOOLING_TESTS = tuple(sorted(path.name for path in TESTS.glob("*_tests.py") if path.name not in TOOLING_TESTS_SKIP))
+# These read pinned dependency sources. CI jobs that don't fetch extern/ skip
+# them with a notice; CTest and any checkout with extern/ still run them.
+NEEDS_EXTERN = {
+    "android_startup_contract_tests.py": ("extern/n64-modern-runtime", "extern/rt64"),
+    "live_lod_pipeline_tests.py": ("extern/rt64",),
+}
+
+
+def missing_checkout(test: str) -> str | None:
+    """The first extern/ checkout a tooling test needs that is absent or empty."""
+    for needed in NEEDS_EXTERN.get(test, ()):
+        directory = ROOT / needed
+        if not directory.is_dir() or not any(directory.iterdir()):
+            return needed
+    return None
+
+
 SUITES = ("guard", "tooling", "metadata", "assets", "track-lab")
 DEFAULT_SUITES = ("guard", "tooling", "metadata", "assets")
 
@@ -58,6 +75,10 @@ def main(argv=None) -> int:
     }
     for suite in dict.fromkeys(suites):
         for command in commands[suite]:
+            absent = missing_checkout(Path(command[-1]).name) if suite == "tooling" else None
+            if absent:
+                print(f"[{suite}] skip {command[-1]}: {absent} is not checked out", flush=True)
+                continue
             print(f"[{suite}] {' '.join(command[1:])}", flush=True)
             if args.list:
                 continue
