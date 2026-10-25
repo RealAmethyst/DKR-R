@@ -11,6 +11,9 @@ default_stages: [pre-commit]
 # are content-addressed, modding/reference-us-v*/* are byte-exact receipts, and
 # the 14 CRLF-pinned files all live under patches/. No fixer may touch them;
 # the pinned-bytes hook below proves it on every commit.
+# The 1.0.7 capsule also pins its first-party "base" files (all of them under
+# runtime-recomp/src/ and runtime-recomp/tests/replay_probe/); those two
+# entries go when the fold deletes the capsule, before C/C++ formatting starts.
 # tests/fixtures/ are pattern-guard inputs and packaging/licenses/ are verbatim
 # third-party texts.
 exclude: |
@@ -20,6 +23,8 @@ exclude: |
     runtime-recomp/RecompiledPatches/|
     runtime-recomp/RecompiledRSP/|
     runtime-recomp/third_party/|
+    runtime-recomp/src/|
+    runtime-recomp/tests/replay_probe/|
     build/|
     patches/|
     modding/reference-us-v|

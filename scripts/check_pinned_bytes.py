@@ -9,7 +9,10 @@ would "fix":
 * the address-only SDK kits, modding/reference-us-v*/, against the ``files``
   map in each kit's receipt.json;
 * the content-addressed source capsules, patches/release-prep/*/source-capsule-*/,
-  whose file names are their own sha256.
+  whose file names are their own sha256;
+* the capsules' "base" files, first-party sources whose CRLF-normalised bytes
+  the capsule manifest pins (``base_sha256``) because capsule.py rebuilds its
+  roles from them.
 
 With no arguments every pin is checked. With paths (what pre-commit passes),
 only the pins those paths belong to are checked; a manifest or receipt in the
@@ -32,6 +35,19 @@ import sys
 ROOT = Path(__file__).resolve().parents[1]
 PATCH_MANIFEST = "patches/manifest.json"
 RECEIPTS = "modding/reference-us-v*/receipt.json"
+CAPSULE_MANIFESTS = "patches/release-prep/*/source-capsule-*/manifest.json"
+# Bases that main had already changed when the capsule was frozen.
+# patches/upstream-sync/restore_capsule.py reads these from the pinned commit
+# instead, so they are free to change; every other base must keep its bytes.
+DRIFTED_BASES = frozenset(
+    {
+        "runtime-recomp/src/game/custom_tracks.cpp",
+        "runtime-recomp/src/game/mobile_graphics_preset.hpp",
+        "runtime-recomp/src/game/mods/magic_code_dispatch.h",
+        "runtime-recomp/src/game/runtime_code_mods.cpp",
+        "runtime-recomp/src/game/runtime_graphics_ui.inl",
+    }
+)
 CAPSULE = re.compile(r"^patches/release-prep/[^/]+/source-capsule-[^/]+/(?P<sha>[0-9a-f]{64})\.[A-Za-z0-9]+$")
 
 
@@ -52,6 +68,14 @@ def pins(root: Path) -> dict[str, tuple[str, str]]:
         match = CAPSULE.match(relative)
         if match:
             pinned[relative] = (match["sha"], "its file name")
+    for manifest_path in sorted(root.glob(CAPSULE_MANIFESTS)):
+        source = manifest_path.relative_to(root).as_posix()
+        capsule = json.loads(manifest_path.read_text(encoding="utf-8"))
+        for entries in capsule["roles"].values():
+            for entry in entries.values():
+                base = entry.get("base")
+                if base and base not in DRIFTED_BASES:
+                    pinned[base] = (entry["base_sha256"], source)
     return pinned
 
 
@@ -72,10 +96,13 @@ def check(root: Path, paths: Iterable[str] | None = None) -> list[str]:
     for path in sorted(pinned) if paths is None else selected(pinned, paths):
         expected, source = pinned[path]
         try:
-            actual = hashlib.sha256((root / path).read_bytes()).hexdigest()
+            raw = (root / path).read_bytes()
         except FileNotFoundError:
             problems.append(f"{path}: missing, but pinned by {source}")
             continue
+        if source.endswith("/manifest.json") and "source-capsule-" in source:
+            raw = raw.replace(b"\r\n", b"\n")  # capsule.py canonical()
+        actual = hashlib.sha256(raw).hexdigest()
         if actual != expected:
             problems.append(f"{path}: sha256 {actual} does not match {expected} pinned by {source}")
     return problems
