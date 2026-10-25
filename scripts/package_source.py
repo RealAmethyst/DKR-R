@@ -1,13 +1,14 @@
 #!/usr/bin/env python3
 """Create and validate a deterministic source ZIP from the current source tree."""
+
 from __future__ import annotations
 
 import argparse
-import pathlib
 import os
-import tempfile
+import pathlib
 import subprocess
 import sys
+import tempfile
 import zipfile
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
@@ -30,11 +31,12 @@ SOURCE_PREFIX = "DKR-R/"
 
 def git_paths(*arguments: str) -> list[pathlib.Path]:
     result = subprocess.run(
-        ["git", *arguments, "-z"], cwd=ROOT, check=True,
+        ["git", *arguments, "-z"],
+        cwd=ROOT,
+        check=True,
         capture_output=True,
     ).stdout
-    return [pathlib.Path(item.decode("utf-8"))
-            for item in result.split(b"\0") if item]
+    return [pathlib.Path(item.decode("utf-8")) for item in result.split(b"\0") if item]
 
 
 def source_files() -> list[pathlib.Path]:
@@ -66,9 +68,33 @@ def source_files() -> list[pathlib.Path]:
         pathlib.PurePosixPath("scripts"),
     )
     allowed_untracked_suffixes = {
-        ".c", ".cc", ".cpp", ".h", ".hpp", ".json", ".md", ".png",
-        ".toml", ".hlsl", ".hlsli", ".in", ".inc", ".inl", ".ld", ".ps1", ".py", ".sh", ".txt", ".patch", ".yaml", ".yml", ".cmake",
-        ".java", ".kt", ".xml", ".gradle",
+        ".c",
+        ".cc",
+        ".cpp",
+        ".h",
+        ".hpp",
+        ".json",
+        ".md",
+        ".png",
+        ".toml",
+        ".hlsl",
+        ".hlsli",
+        ".in",
+        ".inc",
+        ".inl",
+        ".ld",
+        ".ps1",
+        ".py",
+        ".sh",
+        ".txt",
+        ".patch",
+        ".yaml",
+        ".yml",
+        ".cmake",
+        ".java",
+        ".kt",
+        ".xml",
+        ".gradle",
     }
     selected = set(tracked)
     allowed_exact_untracked = {
@@ -87,13 +113,9 @@ def source_files() -> list[pathlib.Path]:
     }
     for path in untracked:
         pure = pathlib.PurePosixPath(path.as_posix())
-        if (
-            pure in allowed_exact_untracked
-            or (
-                path.suffix.lower() in allowed_untracked_suffixes
-                and any(pure.is_relative_to(root)
-                        for root in allowed_untracked_roots)
-            )
+        if pure in allowed_exact_untracked or (
+            path.suffix.lower() in allowed_untracked_suffixes
+            and any(pure.is_relative_to(root) for root in allowed_untracked_roots)
         ):
             selected.add(path)
         elif path.suffix.lower() in allowed_untracked_suffixes:
@@ -115,7 +137,7 @@ def create_archive(output: pathlib.Path) -> None:
             info.create_system = 3
             info.compress_type = zipfile.ZIP_DEFLATED
             executable = relative.suffix.lower() == ".sh"
-            info.external_attr = ((0o100755 if executable else 0o100644) << 16)
+            info.external_attr = (0o100755 if executable else 0o100644) << 16
             archive.writestr(info, source.read_bytes())
 
 
