@@ -62,3 +62,13 @@ Don't disable or route around any of them.
 - Receipts, audits, "contracts" as file hashes, per-feature `package.py`. Release notes go in `CHANGELOG.md`.
 - Playtest and investigation notes go in `docs/notes/<date>-<topic>.md`. They are welcome there; they are not build
   inputs.
+
+## Pinned bytes
+
+Some files must keep their exact bytes; `scripts/check_pinned_bytes.py` (a pre-commit hook) fails if they change.
+Never reformat or "tidy" them:
+
+- `*.patch` files listed in `patches/manifest.json`, and `modding/reference-us-v*/`.
+- Until the fold deletes the 1.0.7 source capsule: everything under `runtime-recomp/src/` and
+  `runtime-recomp/tests/replay_probe/` that the capsule pins as a base. Real code changes there are fine; formatting
+  passes and whitespace fixes are not.

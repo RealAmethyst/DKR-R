@@ -10,6 +10,8 @@
 /scripts/check_includes.py                            @ThatGuyMcd @swhitt
 /scripts/check_registries.py                          @ThatGuyMcd @swhitt
 /scripts/agent_hooks/                                 @ThatGuyMcd @swhitt
+/scripts/check_pinned_bytes.py                        @ThatGuyMcd @swhitt
+/scripts/bootstrap_hooks.py                           @ThatGuyMcd @swhitt
 
 # Lint, format and hook configuration (a new ignore or baseline entry is a rule change)
 /.pre-commit-config.yaml                              @ThatGuyMcd @swhitt
@@ -18,6 +20,7 @@
 /.clang-tidy                                          @ThatGuyMcd @swhitt
 /.gersemirc                                           @ThatGuyMcd @swhitt
 /runtime-recomp/cmake/Warnings.cmake                  @ThatGuyMcd @swhitt
+/.git-blame-ignore-revs                               @ThatGuyMcd @swhitt
 
 # CI, ownership and repository policy
 /.github/                                             @ThatGuyMcd @swhitt
