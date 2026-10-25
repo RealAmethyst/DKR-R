@@ -90,6 +90,9 @@ force-sort-within-sections = true
 [tool.pyright]
 # Strict only for new tooling scripts; everything else is ratcheted in per path.
 include = [
+    "scripts/agent_hooks",
+    "scripts/bootstrap_hooks.py",
+    "scripts/check_pinned_bytes.py",
     "scripts/pattern_guard.py",
     "scripts/guest_hooks.py",
     "scripts/gen_guest_symbols.py",
@@ -98,6 +101,9 @@ include = [
     "scripts/release",
 ]
 strict = [
+    "scripts/agent_hooks",
+    "scripts/bootstrap_hooks.py",
+    "scripts/check_pinned_bytes.py",
     "scripts/pattern_guard.py",
     "scripts/guest_hooks.py",
     "scripts/gen_guest_symbols.py",

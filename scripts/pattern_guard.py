@@ -38,7 +38,7 @@ from __future__ import annotations
 
 import argparse
 import ast
-from collections.abc import Callable, Iterable, Iterator
+from collections.abc import Callable, Iterable, Iterator, Mapping
 import dataclasses
 import fnmatch
 import functools
@@ -352,10 +352,15 @@ class Tree:
     """Files of one checkout plus the context rules need (manifest, targets).
 
     A git work tree is enumerated with git; any other directory (the test
-    fixtures) is walked, and every file in it counts as committed."""
+    fixtures) is walked, and every file in it counts as committed.
 
-    def __init__(self, root: Path) -> None:
+    ``overlay`` maps paths to text that replaces (or creates) the file on
+    disk, so rules can judge an edit before it is written. Overlay paths count
+    as committed outside build/, as they will be once the edit lands."""
+
+    def __init__(self, root: Path, overlay: Mapping[str, str] | None = None) -> None:
         self.root = root.resolve()
+        self.overlay = dict(overlay or {})
         self.is_git = _git_toplevel(self.root) == self.root
         if self.is_git:
             self.tracked = set(_git_lines(self.root, "ls-files", "--cached"))
@@ -365,7 +370,10 @@ class Tree:
             self.tracked = listed = {
                 path.as_posix() for path in relative if ".git" not in path.parts and path.parts[0] != LOCAL_BUILD[:-1]
             }
-        self.files = sorted(path for path in listed if self.is_scanned(path) and (self.root / path).is_file())
+        self.tracked |= {path for path in self.overlay if not path.startswith(LOCAL_BUILD)}
+        self.files = sorted(
+            path for path in listed | set(self.overlay) if self.is_scanned(path) and self.has_file(path)
+        )
 
     def is_scanned(self, path: str) -> bool:
         """Outside the excluded paths, and not untracked local build output."""
@@ -375,9 +383,14 @@ class Tree:
             and (path in self.tracked or not path.startswith(LOCAL_BUILD))
         )
 
+    def has_file(self, path: str) -> bool:
+        return path in self.overlay or (self.root / path).is_file()
+
     @functools.cache
     def text(self, path: str) -> str | None:
         """Decoded file text, or None for binary or unreadable files."""
+        if path in self.overlay:
+            return self.overlay[path]
         try:
             data = (self.root / path).read_bytes()
         except OSError:
@@ -923,7 +936,7 @@ def patches_layout(tree: Tree, path: str, flagged: set[str]) -> Iterator[Finding
 def scan(tree: Tree, paths: Iterable[str]) -> list[Finding]:
     """Every finding for the given tree-relative paths, sorted."""
     findings: list[Finding] = []
-    scoped = [path for path in paths if (tree.root / path).is_file()]
+    scoped = [path for path in paths if tree.has_file(path)]
     for path in scoped:
         for check in FILE_CHECKS:
             findings.extend(check(tree, path))
@@ -931,6 +944,16 @@ def scan(tree: Tree, paths: Iterable[str]) -> list[Finding]:
     for path in scoped:
         findings.extend(patches_layout(tree, path, flagged))
     return sorted(set(findings))
+
+
+def check_content(root: Path, path: str, text: str) -> list[Finding]:
+    """Findings for one root-relative path if its content were ``text``.
+
+    Public entry point for scripts/agent_hooks/pre_edit_guard.py. It applies
+    every rule but does not consult the baseline; callers filter. Excluded
+    paths (extern/, the guard's own files) yield nothing."""
+    tree = Tree(root, {path: text})
+    return scan(tree, [path]) if tree.is_scanned(path) else []
 
 
 # --- Baseline ----------------------------------------------------------------

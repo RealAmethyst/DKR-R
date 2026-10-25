@@ -68,7 +68,7 @@ def selected(pinned: dict[str, tuple[str, str]], paths: Iterable[str]) -> list[s
 def check(root: Path, paths: Iterable[str] | None = None) -> list[str]:
     """One message per pinned file that is missing or whose sha256 changed."""
     pinned = pins(root)
-    problems = []
+    problems: list[str] = []
     for path in sorted(pinned) if paths is None else selected(pinned, paths):
         expected, source = pinned[path]
         try:
@@ -82,7 +82,7 @@ def check(root: Path, paths: Iterable[str] | None = None) -> list[str]:
 
 
 def main(argv: list[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    parser = argparse.ArgumentParser(description=(__doc__ or "").splitlines()[0])
     parser.add_argument("paths", nargs="*", help="limit the check to these files (default: every pin)")
     parser.add_argument("--root", type=Path, default=ROOT, help=argparse.SUPPRESS)
     args = parser.parse_args(argv)

@@ -1424,6 +1424,7 @@ if(BUILD_TESTING)
             "DKRStressRunner|stress_runner_tests.py"
             "DKROwnedContentIdentity|owned_content_identity_tests.py"
             "DKRPatternGuard|pattern_guard_tests.py"
+            "DKRAgentHooks|agent_hooks_tests.py"
             "DKRLauncherCopySource|launcher_copy_source_tests.py")
         string(REPLACE "|" ";" tooling_test "${tooling_test}")
         list(GET tooling_test 0 test_name)

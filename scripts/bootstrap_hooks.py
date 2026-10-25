@@ -75,7 +75,7 @@ def install_pre_commit() -> list[str] | None:
 
 
 def main(argv: list[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    parser = argparse.ArgumentParser(description=(__doc__ or "").splitlines()[0])
     parser.add_argument("--check", action="store_true", help="only report whether the hooks are installed and current")
     args = parser.parse_args(argv)
     bootstrap = f"{'python' if os.name == 'nt' else 'python3'} scripts/bootstrap_hooks.py"
