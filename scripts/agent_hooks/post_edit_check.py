@@ -27,7 +27,9 @@ import json
 import os
 from pathlib import Path
 import re
+import signal
 import subprocess
+import sys
 
 import hooklib
 
@@ -65,6 +67,39 @@ class Snapshot:
         return "".join(difflib.unified_diff(before, after, f"a/{name}", f"b/{name}"))
 
 
+def run_process_tree(command: list[str], cwd: Path, timeout: float) -> tuple[str, bool]:
+    """Run command and return (output, failed); on timeout kill it and every child.
+
+    pre-commit launches the formatters as child processes. Killing only
+    pre-commit on timeout would leave a fixer running that could rewrite a file
+    after the snapshots are restored, so the command gets its own process group
+    (session on POSIX) and the whole group is killed and reaped first.
+    """
+    if sys.platform == "win32":
+        process = subprocess.Popen(
+            command,
+            cwd=cwd,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            text=True,
+            creationflags=subprocess.CREATE_NEW_PROCESS_GROUP,
+        )
+    else:
+        process = subprocess.Popen(
+            command, cwd=cwd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, start_new_session=True
+        )
+    try:
+        output, _ = process.communicate(timeout=timeout)
+        return output, process.returncode != 0
+    except subprocess.TimeoutExpired:
+        if sys.platform == "win32":
+            subprocess.run(["taskkill", "/F", "/T", "/PID", str(process.pid)], capture_output=True, check=False)
+        else:
+            os.killpg(process.pid, signal.SIGKILL)
+        process.communicate()
+        return f"pre-commit did not finish in {timeout:g}s; run it yourself.", True
+
+
 def failing_sections(output: str) -> str:
     """Only the output of hooks that failed (pre-commit prints every hook)."""
     kept: list[str] = []
@@ -93,17 +128,9 @@ def main() -> int:
         return 0
     snapshots = [Snapshot.take(root / rel) for rel in relative]
     try:
-        result = subprocess.run(
-            ["pre-commit", "run", "--color", "never", "--files", *relative],
-            cwd=root,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.STDOUT,
-            text=True,
-            timeout=PRE_COMMIT_TIMEOUT,
+        output, failed = run_process_tree(
+            ["pre-commit", "run", "--color", "never", "--files", *relative], root, PRE_COMMIT_TIMEOUT
         )
-        output, failed = result.stdout, result.returncode != 0
-    except subprocess.TimeoutExpired:
-        output, failed = f"pre-commit did not finish in {PRE_COMMIT_TIMEOUT}s; run it yourself.", True
     finally:
         diffs = [diff for diff in (snapshot.restore() for snapshot in snapshots) if diff]
     if not failed and not diffs:

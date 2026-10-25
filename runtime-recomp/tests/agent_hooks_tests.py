@@ -13,6 +13,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import time
 import unittest
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -292,6 +293,26 @@ class PostEditCheckTests(unittest.TestCase):
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertIn("Bootstrap with", result.stdout)
         self.assertEqual(len(result.stdout.strip().splitlines()), 1)
+
+
+class ProcessTreeTests(unittest.TestCase):
+    def test_timeout_kills_formatters_before_snapshots_are_restored(self):
+        spec = importlib.util.spec_from_file_location("post_edit_check", HOOKS / "post_edit_check.py")
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        with tempfile.TemporaryDirectory() as temp:
+            target = Path(temp) / "edited.py"
+            target.write_text("original\n", encoding="utf-8")
+            # A "pre-commit" that starts a slow fixer and then hangs past the timeout.
+            fixer = f"import time; time.sleep(1.5); open({str(target)!r}, 'w').write('rewritten')"
+            parent = (
+                f"import subprocess, sys, time; subprocess.Popen([sys.executable, '-c', {fixer!r}]); time.sleep(30)"
+            )
+            output, failed = module.run_process_tree([sys.executable, "-c", parent], Path(temp), 0.5)
+            self.assertTrue(failed)
+            self.assertIn("did not finish", output)
+            time.sleep(2.5)  # long enough for an orphaned fixer to have written
+            self.assertEqual(target.read_text(encoding="utf-8"), "original\n")
 
 
 class ConfigTests(unittest.TestCase):
