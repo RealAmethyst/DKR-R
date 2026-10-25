@@ -1,4 +1,4 @@
-# DKR-R Online — v1.0.10
+# DKR-R Online — v1.0.11
 
 Open **DKR-R Online** in the existing launcher. Public/Friends browsing,
 Private/Public hosting, Discord sign-in and a total online count sit alongside
@@ -6,7 +6,7 @@ the existing lobby controls. There is no separate website page to use.
 
 Races and minigames support up to four racing ports; Adventure supports two
 racers. A spectator-capable lobby can also have eight spectators. Everyone
-needs a compatible complete v1.0.10 package, supported original ROM revision,
+needs a compatible complete v1.0.11 package, supported original ROM revision,
 admitted gameplay rules and verified session mods. Keep `assets` and private
 workers with the installation.
 
@@ -76,7 +76,7 @@ without remapping physical controllers to local ports.
 
 The public host mode is **Rollback**. It uses the existing owned replay backend
 internally named `ExperimentalRollback`. The old Auto, Host Prediction and
-Strict Input Sync selector is no longer offered for v1.0.10 public hosting.
+Strict Input Sync selector is no longer offered for v1.0.11 public hosting.
 Old wire enum values and historical investigations have not been reinterpreted.
 Do not change configuration files to bypass the supported-mode gate.
 

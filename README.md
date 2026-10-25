@@ -14,16 +14,15 @@
   </a>
 </p>
 
-## DKR-R v1.0.10 Release Build
+## DKR-R v1.0.11 Release Build
 
-This update is mainly about getting Online into a much better state. I've
-fixed problems joining modded lobbies, races getting stuck at the start,
-and spectators getting a black screen during custom races. I've also
-tidied up Open Lobbies while keeping the current launcher design.
+This update is mainly about the memory issues and missing HUD elements
+people have been reporting. I've also worked on queued graphics data,
+water textures and support for Syeo's updated custom cars. The launcher
+design and the Online fixes from v1.0.10 stay as they were.
 
-Public lobbies, custom cars, achievements, texture tools and the existing
-modding features are all still here. There is no need to reset your saves
-or reinstall your mods.
+Your saves, mods and settings can stay. Please use the complete v1.0.11
+package on every machine in an Online lobby.
 
 DKR-R is a native static recompilation of Diddy Kong Racing. Bring your own
 legally obtained **US v1.0 or US Rev A/v1.1 ROM**. No ROM or extracted game
@@ -37,7 +36,7 @@ assets are supplied.
 3. Linux / Steam Deck: make the **AppImage** executable and launch it.
 4. Add your original ROM in **Play**, choose your controls and start.
 
-v1.0.10 is available for Windows x64, Linux x86_64, Linux ARM64 and Steam
+v1.0.11 is available for Windows x64, Linux x86_64, Linux ARM64 and Steam
 Deck. Both Linux architectures have AppImages. Linux needs glibc 2.38,
 GLIBCXX_3.4.32 and a compatible Vulkan driver.
 
@@ -72,7 +71,7 @@ still prevent direct connections. Joining a running race through the directory
 is separately gated by the service's spectator setting; it never admits a late
 racer. There is no host migration or bundled gameplay relay.
 
-Use matching complete v1.0.10 packages on every peer. Start with the
+Use matching complete v1.0.11 packages on every peer. Start with the
 [Online guide](docs/ONLINE_MULTIPLAYER.md), [public lobby guide](docs/PUBLIC_LOBBIES.md)
 and [spectator guide](docs/SPECTATORS.md).
 
@@ -125,7 +124,7 @@ automatic installation is available. See [Updates](docs/UPDATES.md).
 
 ## Guides and contributing
 
-- [Documentation index](docs/README.md), [v1.0.10 release notes](docs/PUBLIC-1.0.10-NOTES.txt)
+- [Documentation index](docs/README.md), [v1.0.11 release notes](docs/PUBLIC-1.0.11-NOTES.txt)
   and [changelog](CHANGELOG.md).
 - [Troubleshooting](docs/TROUBLESHOOTING.md) and [release validation](RELEASE-VALIDATION.md).
 - [Building](docs/BUILDING.md) and [development](docs/DEVELOPMENT.md).

@@ -1,6 +1,6 @@
 # Troubleshooting DKR-R
 
-## v1.0.10 release contract
+## v1.0.11 release contract
 
 Normal mods share one personal Adventure. Check portable/profile location and Backups & Recovery before restoring. Keep installation receipts/recovery folders. Export logs/support details; report the exact release, ROM revision, course, packs and settings. The accepted HD-water startup fix is included; a hardware-specific problem still needs its own report.
 
@@ -9,7 +9,7 @@ saves or whole profile to troubleshoot a graphics, mod or connection failure.
 
 ## Modded joins, race starts and spectator black screens
 
-Check that everyone has the complete v1.0.10 package first. This release
+Check that everyone has the complete v1.0.11 package first. This release
 includes the accepted playtest.4 fixes. Keep the downloaded offline-mod
 option enabled if you want those copies; matching installed content no
 longer causes the old identity-conflict warning. Genuine conflicts and
@@ -24,6 +24,28 @@ Please don't delete your whole mod library or turn off safeguards.
 A spectator error after five failed recoveries includes the reason. The
 log also records `[spectator][music]`, `[spectator][admission]` and
 `[spectator][playback]`. A race-start stall needs both racing logs too.
+
+## Missing HUD elements, memory reports or rejected graphics
+
+Use the full v1.0.11 package first. Keep `runtime.log` and
+`runtime-previous.log`, with the track, ROM revision, mods, texture packs
+and action immediately before the problem. For Online, include the host
+and affected client or spectator logs from the same attempt.
+
+The normal game heap now uses the admitted expansion RAM headroom.
+`[memory][primary-pool]` and `[hud][heap]` help identify the actual heap
+state. More headroom does not make arbitrarily large mods safe.
+
+Malformed graphics are still rejected. The scheduler handoff repair
+closes an earlier memory ownership gap, but the exact previously logged
+malformed task was not reproduced with game assets during preparation.
+Keep any new command/provenance reports; do not disable those checks.
+
+Water staying vanilla can mean an incomplete HD animation. All frames
+need matching replacements before that family can use HD consistently.
+For `unsupported car texture profile`, use the original updated export
+with v1.0.11. Unknown format revisions or enabled custom boost anchors
+still need exporter/runtime support. See [Vehicles](VEHICLES.md).
 
 ## ROM rejected
 
@@ -70,7 +92,7 @@ Use compatible complete packages and the same original ROM revision.
 The host creates the lobby after choosing mods/rules; changing them requires a
 new lobby. Clients must complete consent, preparation and verification.
 
-v1.0.10 uses Rollback; the old host-backend selector is removed.
+v1.0.11 uses Rollback; the old host-backend selector is removed.
 Try automatic input delay and a suitable prediction window for your route.
 A bounded input wait, renderer slowdown and scene-loading barrier are different
 problems: record the network overlay state and exact scene.

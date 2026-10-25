@@ -1,5 +1,22 @@
 # DKR-R changelog
 
+## 1.0.11 — 25 October 2026
+
+This update is mainly about the memory issues and missing HUD elements
+people have reported. I've kept the launcher design and the v1.0.10
+Online fixes in place.
+
+- Added expansion RAM headroom to the normal game heap, keeping its upper guard.
+- Added safer allocation failure handling and useful HUD memory diagnostics.
+- Protected graphics data before it waits in the game scheduler.
+- Kept queued water animations consistent, with bounded cache recovery.
+- Added the larger textures and explicit driver seating in updated .dkrkart cars.
+- Updated the guides, Windows/Linux builds and signed auto update files.
+
+Windows x64, Linux x86_64/ARM64 and Steam Deck are included. Android,
+macOS and iOS are skipped. Saves and installed mods can stay.
+
+
 ## 1.0.10 — 25 October 2026
 
 This update is mainly about Online stability. I've kept the current launcher

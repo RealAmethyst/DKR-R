@@ -2,7 +2,7 @@
 
 ## Current release composition
 
-For v1.0.7 use the [release pipeline](../release-prep/v1.0.7/BUILDING.txt). The module notes below
+Android is excluded from v1.0.11. The [desktop release pipeline](../release-prep/v1.0.11/BUILDING.txt) does not produce an APK. The module notes below
 explain this layer; their dated playtest paths are historical inputs, not the
 current release command. The accepted water/source capsule preserves the
 composed behaviour. Dependencies and generated guest checkouts stay read-only.

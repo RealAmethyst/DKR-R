@@ -114,6 +114,25 @@ screen-space reflections. This does not change collisions, buoyancy or online
 simulation. High water and hardware tracing can be expensive; compare the same
 scene with Original before attributing a slowdown to netplay.
 
+## Graphics and memory fixes in v1.0.11
+
+I've given the normal game heap its missing expansion RAM headroom,
+while retaining the upper guard and existing allocation lifetimes.
+Allocation failures and missing HUD resources now have clearer logs.
+Queued graphics data is copied before it waits in the game scheduler,
+and the renderer keeps its own decode workspace. These changes do not
+alter the launcher. The renderer changes do not alter online simulation.
+
+Water animations retain their selection while frames are queued. Shared
+frames use one consistent decision, and complete animations can request
+evicted cache entries again, with bounded asynchronous retries. A pack
+replacing only some frames stays consistently vanilla for that animation.
+For example, one replacement out of 16 ripple frames is incomplete.
+The update does not fill in missing artwork or modify your texture pack.
+
+These fixes do not remove GPU, guest memory or mod complexity limits.
+If a problem remains, keep the logs and report the exact scene and packs.
+
 ## Textures and sound
 
 Texture packs, their priorities and CRT filters belong in
@@ -131,7 +150,7 @@ Logo scenes, moving Start Menu names and credits use the selected viewport.
 The copyright/recompilation text has a translucent rounded backing. Credits
 include full-width fades and lower sky, with bounded native readback.
 
-## v1.0.10 spectator and custom-car presentation
+## v1.0.11 spectator and custom-car presentation
 
 Spectators choose All splits, Follow player or the T.T.-style director without
 changing racing input. Custom GPU-rendered cars use safe racer cameras in the

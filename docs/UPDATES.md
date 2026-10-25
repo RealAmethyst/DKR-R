@@ -1,13 +1,13 @@
 # DKR-R updates
 
-## Updating to v1.0.10
+## Updating to v1.0.11
 
 Use **Check for updates** in Play or About DKR-R. Choose **Download update**,
 then **Install update and restart** after playing. Startup checks can be turned
 off, a version can be skipped, and beta/playtest releases are optional. Stable
 releases are the default. A failed check does not stop offline play.
 
-v1.0.10 has Windows x64, Linux x86_64 and Linux ARM64 update packages. Steam
+v1.0.11 has Windows x64, Linux x86_64 and Linux ARM64 update packages. Steam
 Deck uses the Linux x86_64 package. Android, macOS and iOS are excluded from
 this release. Android releases are no longer supported. Older installations
 on excluded platforms must not be pointed at a different platform's download.
@@ -50,12 +50,12 @@ DKR-R-Updater --recover <that-folder/request.json>
 Recovery checks the signed manifest and the exact recorded backup. It does
 not search other folders or delete user data. Do not remove the only backup.
 Older Android/Apple builds retain their own installer and distribution rules;
-there is no new APK, app bundle or IPA in the v1.0.10 set.
+there is no new APK, app bundle or IPA in the v1.0.11 set.
 
 ## Preparing the release update files
 
 The exact filenames are **DKR-R-update.json** and **DKR-R-update.sig**. Upload
-both beside the final downloads. The stable tag is **Version1.0.10**, and must
+both beside the final downloads. The stable tag is **Version1.0.11**, and must
 match the manifest. The source commit must contain all accepted Patch Pipeline
 layers and the final release metadata.
 
@@ -66,8 +66,8 @@ it does not need a separate manifest entry. Linux requires glibc 2.38, with
 GLIBCXX_3.4.32 and a compatible Vulkan driver also needed by these packages.
 
 ```text
-python -B patches/release-prep/v1.0.10/update_assets.py sign --packages <finished-release-folder> --commit <full-source-commit> --private-key <protected-original-key.pem> --output <fresh-signing-folder>
-python -B patches/release-prep/v1.0.10/update_assets.py verify --packages <finished-release-folder> --output <signed-pair-folder>
+python -B patches/release-prep/v1.0.11/update_assets.py sign --packages <finished-release-folder> --commit <full-source-commit> --private-key <protected-original-key.pem> --output <fresh-signing-folder>
+python -B patches/release-prep/v1.0.11/update_assets.py verify --packages <finished-release-folder> --output <signed-pair-folder>
 ```
 
 The wrapper uses the existing scripts/update_release.py signer and the pinned
@@ -89,11 +89,11 @@ replacing already published assets. Publishing makes the update discoverable.
 
 ## Checks before rollout
 
-Run the updater signing/tooling and native updater tests. Check a v1.0.9 notice,
+Run the updater signing/tooling and native updater tests. Check a v1.0.10 notice,
 download, install and restart on actual Windows/Linux installations, including
 portable data and Unicode paths. Keep interrupted-download/install recovery,
 corrupt signatures/packages, locked files, multiple instances, read-only folders
 and disk-space failures in the checklist. Automated checks and final device
 acceptance are recorded separately in [release validation](../RELEASE-VALIDATION.md).
 
-See the [release signing instructions](../patches/release-prep/v1.0.10/UPDATER.txt).
+See the [release signing instructions](../patches/release-prep/v1.0.11/UPDATER.txt).

@@ -1,4 +1,4 @@
-# Launcher and overlay — v1.0.10
+# Launcher and overlay — v1.0.11
 
 Pick your ROM and start from **Play**. Desktop portable mode selects a separate
 data location on the next launch; it does not move your existing profile.
