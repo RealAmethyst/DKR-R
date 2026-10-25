@@ -145,6 +145,10 @@ class CheckerTests(unittest.TestCase):
         self.assertEqual(run_checker(self.root, "./patches/manifest.json")[0], 1)
 
 
+@unittest.skipUnless(
+    os.environ.get("DKR_PRE_COMMIT_INTEGRATION") == "1",
+    "real pre-commit run; use python3 scripts/check.py --suite host-tools",
+)
 @unittest.skipUnless(shutil.which("pre-commit"), "pre-commit is not installed (python3 scripts/bootstrap_hooks.py)")
 class HookRunTests(unittest.TestCase):
     """Run the real hook set over copies of pinned files and a control file."""
