@@ -10,7 +10,8 @@ Windows). Commands with options describe them with `--help`.
 | Task | Command | Inputs |
 |---|---|---|
 | Fast contributor checks | `python3 scripts/check.py` | Git and Python; no ROM or downloads |
-| List checks or choose a suite | `python3 scripts/check.py --list` / `--suite tooling` | No C++ build |
+| List checks or choose suites | `python3 scripts/check.py --list` / `--suite guard,tooling` | No C++ build |
+| Refuse new patch layers | `python3 scripts/pattern_guard.py --tree` (`--explain all` lists rules) | Git; checks `architecture/pattern-guard-baseline.txt` |
 | Prepare pinned dependencies | `python3 scripts/bootstrap_dependencies.py` | Git; network for missing revisions |
 | Apply reviewed patches | `python3 scripts/apply_dependency_patches.py` | Prepared dependencies |
 | Inspect patch readiness | `python3 scripts/apply_dependency_patches.py --check` | Read-only checkout validation |
