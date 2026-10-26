@@ -47,10 +47,10 @@ def image(path,machine,version=False):
         if b'1.0.7+beta.10' in data or '1.0.7+beta.10'.encode('utf-16le') in data:raise ValueError('Stale beta executable')
     return data
 
-WATER_FEATURE_MARKER=b'workload-atomic promotion'
+WATER_FEATURE_MARKER=None
 
-def features(data):
-    for marker in (b'complete-family selection',WATER_FEATURE_MARKER,
+def features(data, water_marker=b'workload-atomic promotion'):
+    for marker in (b'complete-family selection',WATER_FEATURE_MARKER or water_marker,
         b'personal EEPROM committed and read-back verified',b'one-personal-save',
         b'The mod installation registry needs recovery; it was not replaced.',
         b'The track package contains more than one course. Import each .dkrmap separately.',
