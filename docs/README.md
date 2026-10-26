@@ -21,6 +21,7 @@ are still useful, but they aren't the current feature list.
 | [Magic Codes](MAGIC_CODES.md) | Launch selection, online rules and one-shot actions. |
 | [DKR-R Online](ONLINE_MULTIPLAYER.md) | Public/private hosting, Rollback, Scoreboard, session mods, saves and connection limits. |
 | [Public lobbies](PUBLIC_LOBBIES.md) | Shared Discord sign-in, Public/Friends, account count and directory privacy. |
+| [Profiles, pictures and sign-in](ONLINE_PROFILES.md) | Shared names, friend cards, Steam Deck persistence and the matching API deployment. |
 | [Spectators](SPECTATORS.md) | Watching, cameras, host-approved swaps and late-join gates. |
 | [Vehicles](VEHICLES.md) | Custom .dkrkart cars, native selection and managed Store installations. |
 | [Achievements](ACHIEVEMENTS.md) | 94 local goals, recognition, notifications and progress protection. |

@@ -130,8 +130,9 @@ service was unavailable needs recreation before public publication.
 
 The total counts accounts, not instances/controllers. A sleeping/crashed client
 can linger up to 60 seconds. Appear offline is a friend-presence control;
-Disconnect Online removes this instance from aggregate presence. Linux without
-Secret Service can use session-only sign-in. Do not disable certificate checks
+Disconnect Online removes this instance from aggregate presence. Without a Linux
+keyring, Keep me signed in uses the owner-only device store; session-only sign-in
+is still available with remembering off. Do not disable certificate checks
 to work around TLS errors. See [Public lobbies](PUBLIC_LOBBIES.md).
 
 If mod preparation is already approved, account/roster refresh should not
