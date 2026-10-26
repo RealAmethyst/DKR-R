@@ -1,6 +1,8 @@
 #include "online_directory.hpp"
 #include "directory_tls.hpp"
 #include "monocypher.h"
+#include "online_profile/profile_bridge.hpp"
+#include "online_profile/display_name_save.hpp"
 #include <algorithm>
 #include <condition_variable>
 #include <deque>
@@ -8,6 +10,7 @@
 #include <map>
 #include <mutex>
 #include <thread>
+#include <utility>
 
 namespace dkr::online {
 namespace {
@@ -27,6 +30,7 @@ struct State {
     std::deque<Json> inbox,outbox;
     std::map<std::string,std::string> pending;
     std::map<std::string,std::string> join_requests;
+    std::map<std::string,std::string> social_requests;
     std::filesystem::path root;
     std::string instance=secure::encode_key(secure::generate_key()),compatible,joining_id;
     std::size_t jitter=std::hash<std::string>{}(instance);
@@ -36,6 +40,7 @@ struct State {
     std::shared_ptr<rtc::WebSocket> socket;
     std::atomic<std::uint64_t> channel{0};
     std::uint64_t serial=0;
+    bool profile_refresh=false;
     std::jthread worker;
     void update(){published.store(std::make_shared<const View>(ui));}
 };
@@ -44,7 +49,7 @@ std::string next_id(State& s){return "r"+std::to_string(++s.serial);}
 void retire_join(State&);
 void close_socket(State& s) {
     std::shared_ptr<rtc::WebSocket> socket;
-    {std::lock_guard lock(s.mutex);s.ui.connection_generation=++s.channel;socket=std::move(s.socket);s.pending.clear();s.join_requests.clear();s.inbox.clear();retire_join(s);s.ui.connected=false;s.ui.count_available=false;s.ui.public_listed=false;s.ui.updating=false;s.ui.rooms.clear();s.update();}
+    {std::lock_guard lock(s.mutex);s.ui.connection_generation=++s.channel;socket=std::move(s.socket);s.pending.clear();s.join_requests.clear();s.social_requests.clear();s.ui.members.clear();s.inbox.clear();retire_join(s);s.ui.connected=false;s.ui.count_available=false;s.ui.public_listed=false;s.ui.updating=false;s.ui.rooms.clear();s.update();}
     if(socket){socket->resetCallbacks();socket->close();}
 }
 void enqueue(Json j) {
@@ -57,6 +62,7 @@ void send(State& s,Json j) {
     std::shared_ptr<rtc::WebSocket> socket;
     {std::lock_guard lock(s.mutex);socket=s.socket;const auto id=next_id(s);j["request"]=id;
         if(s.pending.size()>=256)throw std::runtime_error("Too many unanswered directory requests.");s.pending[id]=string(j,"type",32);}
+    {std::lock_guard lock(s.mutex);if(string(j,"type",32)=="social")s.social_requests[string(j,"request",80)]=string(j,"code",5)+":"+string(j,"sender",20);}
     {std::lock_guard lock(s.mutex);if(string(j,"type",32)=="join"||string(j,"type",32)=="resolve")s.join_requests[string(j,"request",80)]=string(j,"key",80);}
     if(!socket||!socket->isOpen())throw std::runtime_error("The online directory disconnected.");
     auto body=j.dump();if(body.size()>16384)throw std::runtime_error("The online message is too large.");
@@ -89,9 +95,10 @@ void retire_join(State& s) {
 void run(std::stop_token stop) {
     auto& s=state();unsigned generation=~0U,attempt=0;
     auto retry=Clock::time_point{},heartbeat=Clock::time_point{},renew=Clock::time_point{};
-    std::string host_epoch,host_id,last_state;
+    std::string host_epoch,host_id,last_state,connection_name;
     std::uint64_t host_revision=0;
-    auto changed_at=Clock::time_point{};
+    auto changed_at=Clock::time_point{},social_at=Clock::time_point{};
+    std::string social_context;
     while(!stop.stop_requested()) {
         AccountView account;AccountRequest request;bool enabled;
         {std::lock_guard lock(s.mutex);account=s.account;request=s.request;enabled=s.ui.enabled;if(s.retry_now){retry={};s.retry_now=false;}}
@@ -132,7 +139,7 @@ void run(std::stop_token stop) {
                     });
                     socket->onClosed([channel]{auto& s=state();std::lock_guard lock(s.mutex);if(channel==s.channel){retire_join(s);s.ui.connected=false;s.ui.public_listed=false;s.ui.rooms.clear();s.update();s.cv.notify_all();}});
                     socket->onError([channel](std::string){auto& s=state();std::lock_guard lock(s.mutex);if(channel==s.channel){s.ui.error="The directory connection failed. Retrying...";s.update();}});
-                    {std::lock_guard lock(s.mutex);s.socket=socket;s.ui.connection_generation=channel;s.ui.feature_enabled=true;s.ui.running_spectators=capabilities.value("runningSpectators",false);s.ui.status="Connecting to DKR-R Online...";s.update();}
+                    {std::lock_guard lock(s.mutex);s.socket=socket;connection_name=identity.name;s.ui.connection_generation=channel;s.ui.feature_enabled=true;s.ui.running_spectators=capabilities.value("runningSpectators",false);s.ui.social_profiles=capabilities.value("socialProfiles",false);s.ui.status="Connecting to DKR-R Online...";s.update();}
                     socket->open("wss://dkr-mod-library-api.ross-macgregorbars.workers.dev/v1/online/connect");
                     retry=now+std::chrono::seconds(15);heartbeat=now;renew=now+std::chrono::seconds(60);
                     host_id.clear();host_epoch.clear();last_state.clear();host_revision=0;
@@ -140,6 +147,7 @@ void run(std::stop_token stop) {
             }
             {std::lock_guard lock(s.mutex);opened=s.socket&&s.socket->isOpen();}
             if(opened){
+                {std::lock_guard lock(s.mutex);if(std::exchange(s.profile_refresh,false)){renew={};social_at={};}}
                 {std::lock_guard lock(s.mutex);s.ui.connected=true;s.ui.status="Connected to DKR-R Online.";s.update();}attempt=0;
                 if(now>=renew){request("POST","/v1/online/session",Json::object(),s.instance,stop);renew=now+std::chrono::seconds(60);}
                 if(now>=heartbeat){send(s,{{"type","heartbeat"}});heartbeat=now+std::chrono::milliseconds(19000+(s.jitter+s.serial*73)%2000);}
@@ -161,9 +169,23 @@ void run(std::stop_token stop) {
                             s.update();
                         }
                     }else if(type=="result"){
-                        std::string operation,join_request;
+                        std::string operation,join_request,social_request;
                         {std::lock_guard lock(s.mutex);const auto id=string(item,"request",80);const auto found=s.pending.find(id);if(found==s.pending.end())continue;operation=found->second;s.pending.erase(found);
-                            if(auto found=s.join_requests.find(id);found!=s.join_requests.end()){join_request=found->second;s.join_requests.erase(found);}}
+                            if(auto found=s.join_requests.find(id);found!=s.join_requests.end()){join_request=found->second;s.join_requests.erase(found);}
+                            if(auto found=s.social_requests.find(id);found!=s.social_requests.end()){social_request=found->second;s.social_requests.erase(found);}}
+                        if(operation=="social"){
+                            std::vector<SocialMember> members;
+                            const auto data=item.value("data",Json::object());
+                            if(item.value("ok",false)&&data.is_object()&&data.contains("members")&&data["members"].is_array()&&data["members"].size()<=12){
+                                for(const auto& row:data["members"]){
+                                    SocialMember m{string(row,"sender",20),string(row,"publicKey",64),string(row,"identity",13),string(row,"friendCode",100),string(row,"avatar",180)};
+                                    if(!m.sender.empty()&&dkr::profile::bridge::verify(m.public_key,m.identity,m.friend_code)&&dkr::profile::shared_avatar(m.avatar))members.push_back(std::move(m));
+                                }
+                            }
+                            std::lock_guard lock(s.mutex);
+                            if(social_request==social_context){s.ui.members=std::move(members);s.update();}
+                            continue; // Optional social metadata cannot fail or reconnect native play.
+                        }
                         if(!item.value("ok",false)){
                             const auto error=item.value("error",Json::object());
                             std::lock_guard lock(s.mutex);s.ui.error=string(error,"message",256);
@@ -203,13 +225,23 @@ void run(std::stop_token stop) {
                     }
                 }
                 for(auto& item:outbox)send(s,std::move(item));
-                Json host;
+                Json host,member;
                 std::vector<Json> responses;
                 {std::lock_guard lock(s.bridge_mutex);
                     for(auto& [owner,bridge]:s.bridges){std::lock_guard own(bridge->mutex);
                         if(bridge->state.value("host",false))host=bridge->state;
+                        if(bridge->state.value("socialMember",false))member=bridge->state;
                         for(auto& response:bridge->responses)responses.push_back(std::move(response));bridge->responses.clear();}}
                 for(auto& response:responses)send(s,std::move(response));
+                const auto social_code=string(host.is_object()?host:member,"code",5);
+                const auto social_sender=string(host.is_object()?host:member,host.is_object()?"socialHost":"sender",20);
+                const auto context=social_code.size()==5&&!social_sender.empty()?social_code+":"+social_sender:std::string{};
+                if(context!=social_context){social_context=context;social_at={};std::lock_guard lock(s.mutex);s.ui.members.clear();s.update();}
+                bool social_enabled=false,social_pending=false;
+                {std::lock_guard lock(s.mutex);social_enabled=s.ui.social_profiles;social_pending=std::any_of(s.pending.begin(),s.pending.end(),[](const auto& p){return p.second=="social";});}
+                if(social_enabled&&!social_context.empty()&&!social_pending&&now>=social_at){
+                    send(s,{{"type","social"},{"code",social_code},{"sender",social_sender}});social_at=now+std::chrono::seconds(5);
+                }
                 if(!host.is_null()){
                     host.erase("host");const auto epoch=string(host,"epoch",80),serialized=host.dump();
                     bool updating;{std::lock_guard lock(s.mutex);updating=std::any_of(s.pending.begin(),s.pending.end(),[](const auto& p){return p.second=="room";});}
@@ -221,6 +253,11 @@ void run(std::stop_token stop) {
                 }else if(!host_id.empty()){
                     send(s,{{"type","close"}});host_id.clear();host_epoch.clear();last_state.clear();host_revision=0;
                     std::lock_guard lock(s.mutex);s.ui.public_listed=false;s.ui.updating=false;s.update();
+                }
+                bool joining;
+                {std::lock_guard lock(s.mutex);joining=s.ui.joining||!s.joining_id.empty();}
+                if(dkr::profile::refresh_idle_name(connection_name,identity.name,host.is_object(),member.is_object(),joining)) {
+                    close_socket(s);retry={};
                 }
             }
         }catch(const std::exception&){
@@ -243,6 +280,7 @@ std::shared_ptr<const View> view(){return state().published.load();}
 void connect(bool enabled){auto& s=state();std::lock_guard lock(s.mutex);s.ui.enabled=enabled;s.ui.error.clear();s.retry_now=enabled;if(!enabled)retire_join(s);s.update();s.cv.notify_all();
     try{std::ofstream file(s.root/"online-directory.json",std::ios::trunc);file<<Json{{"enabled",enabled}}.dump();}catch(...){}
 }
+void refresh_profile(){auto& s=state();std::lock_guard lock(s.mutex);s.profile_refresh=true;s.cv.notify_all();}
 void visibility(bool value){auto& s=state();std::lock_guard lock(s.mutex);s.ui.public_desired=value;s.ui.updating=s.ui.connected;s.update();s.cv.notify_all();}
 void hidden(bool value){auto& s=state();std::lock_guard lock(s.mutex);if(s.ui.hidden!=value){s.ui.hidden=value;if(value)s.ui.public_desired=false;s.update();s.cv.notify_all();}}
 void compatibility(std::string value){auto& s=state();std::lock_guard lock(s.mutex);s.compatible=std::move(value);}

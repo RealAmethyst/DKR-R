@@ -13,9 +13,14 @@ unsigned checks=0;
 void check(bool b,const char* why){++checks;if(!b)throw std::runtime_error(why);}
 int main(int argc,char** argv)try {
 #ifdef _WIN32
-    if(argc==3 && std::string_view(argv[1])=="--child"){
-        DWORD flags=0;const auto h=reinterpret_cast<HANDLE>(std::stoull(argv[2]));
-        return GetHandleInformation(h,&flags)?1:0;
+    if(argc==4 && std::string_view(argv[1])=="--child"){
+        const auto h=reinterpret_cast<HANDLE>(std::stoull(argv[2]));
+        BY_HANDLE_FILE_INFORMATION file{};
+        if(!GetFileInformationByHandle(h,&file))return 0;
+        // A child may reuse the same numeric handle for a different object.
+        const auto identity=std::to_string(file.dwVolumeSerialNumber)+":"+
+            std::to_string(file.nFileIndexHigh)+":"+std::to_string(file.nFileIndexLow);
+        return identity==argv[3]?1:0;
     }
 #endif
     check(!p::setup_bulk,"default race queue");
@@ -72,7 +77,11 @@ int main(int argc,char** argv)try {
     // Force the old hazardous CRT flag back on: the production child launcher
     // must still exclude it. Only this synthetic executable is started.
     check(SetHandleInformation(handle,HANDLE_FLAG_INHERIT,HANDLE_FLAG_INHERIT)!=0,"fixture inheritable handle");
-    updates::Child child(updates::application_executable(),{"--child",std::to_string(reinterpret_cast<std::uintptr_t>(handle))},root);
+    BY_HANDLE_FILE_INFORMATION file_identity{};
+    check(GetFileInformationByHandle(handle,&file_identity)!=0,"inherited-handle fixture file identity");
+    const auto identity=std::to_string(file_identity.dwVolumeSerialNumber)+":"+
+        std::to_string(file_identity.nFileIndexHigh)+":"+std::to_string(file_identity.nFileIndexLow);
+    updates::Child child(updates::application_executable(),{"--child",std::to_string(reinterpret_cast<std::uintptr_t>(handle)),identity},root);
     check(child.wait(10000)==0,"production Child does not inherit CRT file handles");
 #else
     check((fcntl(fileno(stream),F_GETFD)&FD_CLOEXEC)!=0,"actual POSIX log descriptor closes on exec");

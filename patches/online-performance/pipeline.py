@@ -3,7 +3,7 @@ from pathlib import Path
 import argparse,hashlib,json,re,sys
 sys.dont_write_bytecode=True
 AUTH=Path(__file__).resolve().parent;ROOT=AUTH.parents[1]
-VERSION='1.0.11-online-playtest.1'
+VERSION='1.0.11-online-playtest.2'
 NAMES={('DKRExperimentalOwnedGameV77','probe_native.c'),('DKRExperimentalOwnedGameV80','probe_native.c'),
  ('DKRUpdateInstall','update_process.cpp'),('DKRPortGame','game_main.cpp'),('DKRPortGame','party_runtime.cpp'),
  ('DKRNetplayCore','direct_session.cpp'),('DKRNetplayCore','quick_join_transport.cpp'),
@@ -59,6 +59,19 @@ def compose(rows,out):
                 '              dkr::online_performance::additional_capacity(traffic,dkr::online_performance::setup_bulk,buffered,aggregate,bytes.size()+1U)))')
         elif name=='direct_session.cpp':
             text=header('setup_policy.hpp')+text
+            text=once(text,'DirectSession::DirectSession()',
+                'namespace {\nvoid retire_directory_room(const void* session) {\n'
+                '    dkr::online::native::reset(session);\n'
+                '    auto bridge = dkr::online::bridge(session);\n'
+                '    std::lock_guard lock(bridge->mutex);\n'
+                '    bridge->commands.clear();\n    bridge->responses.clear();\n}\n} // namespace\n\n'
+                'DirectSession::DirectSession()')
+            text=once(text,'    state_ = ConnectionState::Offline;\n    is_host_ = false;',
+                '    state_ = ConnectionState::Offline;\n    is_host_ = false;\n'
+                '    // A retired transport will not pump the directory owner again.\n'
+                '    retire_directory_room(this);')
+            text=once(text,'    state_ = ConnectionState::Failed;\n    status_ = message;',
+                '    state_ = ConnectionState::Failed;\n    retire_directory_room(this);\n    status_ = message;')
             text=once(text,'            const DatagramSendStatus result = transport_->send_status(',
                 '            dkr::online_performance::SetupBulk setup(packet.type==protocol::MessageType::ModData);\n'
                 '            const DatagramSendStatus result = transport_->send_status(')

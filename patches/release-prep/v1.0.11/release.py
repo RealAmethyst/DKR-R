@@ -4,7 +4,7 @@ import argparse, hashlib, importlib.util, json, subprocess, sys, zipfile
 sys.dont_write_bytecode = True
 AUTH = Path(__file__).resolve().parent
 ROOT = AUTH.parents[2]
-VERSION = '1.0.11'
+VERSION = (ROOT/'VERSION').read_text().strip()
 EXCLUDED = ('.wrangler/', 'extern/', 'runtime-recomp/RecompiledFuncs/',
             'runtime-recomp/RecompiledPatches/', 'patches/lobby-discovery-plan-20261023/',
             'patches/lobby-discovery-plan-20261024/')

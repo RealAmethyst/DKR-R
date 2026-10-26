@@ -25,6 +25,9 @@ def compose(rows,out):
         source=Path(row['path']);raw=source.read_bytes();text=raw.decode().replace('\r\n','\n')
         text='#include "'+(out/'producer_snapshot.hpp').as_posix()+'"\n'+text
         if source.name=='presentation_identity.cpp':
+            text='#include "'+(ROOT/'runtime-recomp/src/game/live_fov/runtime.hpp').as_posix()+'"\n'+text
+            text=once(text,'extern "C" void dkr_presentation_frame_begin(std::uint8_t* rdram,\n                                              recomp_context*) {',
+                'extern "C" void dkr_presentation_frame_begin(std::uint8_t* rdram,\n                                              recomp_context* context) {\n    dkr::runtime::live_fov::refresh(rdram,context);')
             # This existing hook runs at gfxtask_run_xbus ENTRY, before its
             # osSendMesg can wake the scheduler. Capture regardless of Modern
             # presentation; historical replay keeps its existing suppression.

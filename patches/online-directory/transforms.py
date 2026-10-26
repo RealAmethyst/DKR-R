@@ -33,7 +33,7 @@ def direct(text,stage):
             send_with_key(source,peer_key,protocol::MessageType::HelloAck,protocol::encode_hello_ack({false,0,"Sign in with Discord and join through DKR-R Online."}));return;
         }
         if(!repeated){auto* binding=dkr::online::native::binding(*directory_owner,packet_sender);
-            if(binding)dkr::online::respond(this,{{"type","consume"},{"id",binding->id}});}
+            if(binding)dkr::online::respond(this,{{"type","consume"},{"id",binding->id},{"sender",std::to_string(binding->sender)}});}
         auto gate=dkr::runtime::party_start::gate(this);
         const auto* watch_binding=dkr::online::native::binding(*directory_owner,packet_sender);
         const bool running_watch=watch_binding&&dkr::online::contract::running_spectator(watch_binding->watching,watch_binding->allow_running&&dkr::online::view()->running_spectators,party->enabled,party->running,party->stopping,launch_countdown_active_||launch_stage_!=LaunchStage::Idle);

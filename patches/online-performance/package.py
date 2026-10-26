@@ -1,6 +1,6 @@
 """Allowlisted Windows ZIP and Linux AppImage playtests; no game execution."""
 from pathlib import Path
-import argparse,importlib.util,inspect,json,sys
+import argparse,importlib.util,json,sys
 sys.dont_write_bytecode=True
 import audit,pipeline
 AUTH=Path(__file__).resolve().parent;ROOT=AUTH.parents[1]
@@ -13,9 +13,7 @@ if __name__=='__main__':
     checked=audit.inspect(a.build,binary,a.baseline,a.accepted)
     s=importlib.util.spec_from_file_location('online_allowlist',ROOT/'patches/release-prep/v1.0.7/package_release.py')
     m=importlib.util.module_from_spec(s);s.loader.exec_module(m);m.VERSION=pipeline.VERSION
-    source=inspect.getsource(m.features);old="b'workload-atomic promotion'"
-    if source.count(old)!=1:raise ValueError('Accepted feature guard changed')
-    exec(compile(source.replace(old,"b'immutable workload families'",1),str(AUTH/'package.py'),'exec'),m.__dict__)
+    m.WATER_FEATURE_MARKER=b'immutable workload families'
     def notes(root,label):
         for name in ('README.txt','RELEASE-NOTES.txt'):m.copy(AUTH/'PLAYTEST.txt',root/name)
         m.copy(AUTH/'PIPELINE.txt',root/'ONLINE-PERFORMANCE.txt')

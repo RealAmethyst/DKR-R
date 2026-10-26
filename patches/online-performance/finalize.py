@@ -1,7 +1,7 @@
 """Seal matching test builds and evidence before any later main-branch integration."""
 from pathlib import Path
 import argparse,hashlib,json,shutil,subprocess,zipfile
-AUTH=Path(__file__).resolve().parent;ROOT=AUTH.parents[1];VERSION='1.0.11-online-playtest.1'
+AUTH=Path(__file__).resolve().parent;ROOT=AUTH.parents[1];VERSION='1.0.11-online-playtest.2'
 def need(ok,why):
     if not ok:raise ValueError(why)
 def sha(path):
@@ -14,7 +14,7 @@ if __name__=='__main__':
         receipt=json.loads((a.work/'packages'/platform/'BUILD-RECEIPT.json').read_text())
         artifact=a.work/'packages'/platform/receipt['artifact']['name'];need(receipt['version']==VERSION and sha(artifact)==receipt['artifact']['sha256'],'Package identity differs')
         archive=json.loads((a.work/platform/'ARCHIVE-REPORT.json').read_text());need(archive['artifact_sha256']==sha(artifact) and archive['exact_payload_match'],'Archive read-back missing')
-        core=json.loads((a.work/platform/'checks/CHECKS.json').read_text());need(len(core['fixtures'])==6 and not core['game_rom_rsp_gpu_live_multiplayer_executed'],'Core fixtures incomplete')
+        core=json.loads((a.work/platform/'checks/CHECKS.json').read_text());need(len(core['fixtures'])==7 and not core['game_rom_rsp_gpu_live_multiplayer_executed'],'Core fixtures incomplete')
         retained=json.loads((a.work/platform/'retained-final/CHECKS.json').read_text());need(len(retained['checks'])==14 and retained['vehicle']['checks']==7449,'Retained checks incomplete')
         if platform=='linux':need(retained['vehicle']['sanitizer']['exit_code']==0,'Linux vehicle sanitizer check missing')
         portrait=json.loads((a.work/platform/'portraits.json').read_text());need(portrait['exit_code']==0 and portrait['passed_checks']>=14,'Portrait regression missing')

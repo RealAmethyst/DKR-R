@@ -3,15 +3,15 @@ from pathlib import Path
 from types import SimpleNamespace
 import argparse,importlib.util,json,re,subprocess,sys
 sys.dont_write_bytecode=True
-AUTH=Path(__file__).resolve().parent;ROOT=AUTH.parents[2];VERSION='1.0.11';TAG='Version1.0.11'
-PLATFORMS={'windows-x64':('windows','x86_64','DKR-R-1.0.11-Windows-x64.zip'),
-    'linux-x86_64':('linux','x86_64','DKR-R-1.0.11-Linux-x86_64.AppImage'),
-    'linux-aarch64':('linux','aarch64','DKR-R-1.0.11-Linux-aarch64.AppImage')}
+AUTH=Path(__file__).resolve().parent;ROOT=AUTH.parents[2];VERSION=(ROOT/'VERSION').read_text().strip();TAG='Version'+VERSION
+PLATFORMS={'windows-x64':('windows','x86_64',f'DKR-R-{VERSION}-Windows-x64.zip'),
+    'linux-x86_64':('linux','x86_64',f'DKR-R-{VERSION}-Linux-x86_64.AppImage'),
+    'linux-aarch64':('linux','aarch64',f'DKR-R-{VERSION}-Linux-aarch64.AppImage')}
 
 def base():
     s=importlib.util.spec_from_file_location('release111_trusted_signing',AUTH.parent/'v1.0.9/update_assets.py')
     m=importlib.util.module_from_spec(s);s.loader.exec_module(m);m.VERSION=VERSION;m.TAG=TAG
-    m.DECK='DKR-R-1.0.11-SteamDeck-x86_64.AppImage';return m
+    m.DECK=f'DKR-R-{VERSION}-SteamDeck-x86_64.AppImage';return m
 
 def source(commit):
     def git(*a):return subprocess.check_output(['git',*a],cwd=ROOT)

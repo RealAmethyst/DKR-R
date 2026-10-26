@@ -7,11 +7,11 @@ const char* DirectoryPhase(const std::string& phase){
 }
 void DrawOlDirectoryAccount(float inner){
     const auto online=dkr::online::view();const auto account=dkr::store::service().view();
-    OlParagraph(online->signed_in?"Discord: "+online->account_name:"Sign in with Discord for public lobbies.",14.F,kOlSoft,inner);
-    PaddockGap(8.F);
     if(!online->signed_in){
-        if(account->signing_in){if(OlButton("Cancel sign-in"))dkr::store::service().cancel_login();}
-        else if(OlButton("Sign in with Discord",OlTone::Go)){dkr::online::connect(true);dkr::store::service().login();}
+        OlParagraph("Sign in with Discord for public lobbies.",14.F,kOlSoft,inner);
+        PaddockGap(8.F);
+        if(account->signing_in){if(OlButton("Cancel sign-in",OlTone::Plain,inner))dkr::store::service().cancel_login();}
+        else if(OlButton("Sign in with Discord",OlTone::Go,inner)){dkr::online::connect(true);dkr::store::service().login();}
         bool remember=account->remember;
 #ifdef _WIN32
         const bool secure_remember=true;
@@ -22,9 +22,9 @@ void DrawOlDirectoryAccount(float inner){
         else OlParagraph("Session-only sign-in. A desktop keyring is unavailable.",12.5F,kOlSoft,inner);
         if(account->signing_in){PaddockGap(8.F);OlParagraph(account->status,12.5F,kOlSoft,inner);}
         if(!account->error.empty()){PaddockGap(8.F);OlParagraph(account->error,12.5F,kOlError,inner);}
-    }else if(online->enabled&&online->connected){if(OlButton("Disconnect Online"))dkr::online::connect(false);}
-    else if(online->enabled){if(OlButton("Reconnect Online",OlTone::Go))dkr::online::connect(true);}
-    else if(OlButton("Connect Online",OlTone::Go))dkr::online::connect(true);
+    }else if(online->enabled&&online->connected){if(OlButton("Disconnect Online",OlTone::Plain,inner))dkr::online::connect(false);}
+    else if(online->enabled){if(OlButton("Reconnect Online",OlTone::Go,inner))dkr::online::connect(true);}
+    else if(OlButton("Connect Online",OlTone::Go,inner))dkr::online::connect(true);
     if(online->signed_in&&account->status=="Signed in with Discord."&&!account->error.empty()){
         PaddockGap(8.F);OlParagraph(account->error,12.5F,kOlError,inner);
     }

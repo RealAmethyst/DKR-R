@@ -9,7 +9,7 @@ if __name__=='__main__':
     s=importlib.util.spec_from_file_location('retained_checks',ROOT/'patches/release-prep/v1.0.11/run_checks.py')
     m=importlib.util.module_from_spec(s);s.loader.exec_module(m)
     names=['DKRPortGame',*[v[0] for v in m.TARGETS.values()],'DKRVehicleOriginalChecks','DKRVehicleOriginalBeforeChecks',
-        *[f'DKROnlineMenu{r}{s}Checks' for r in (77,80) for s in ('Before','')],'DKROnlineSetupChecks','DKROnlinePartyChecks']
+        *[f'DKROnlineMenu{r}{s}Checks' for r in (77,80) for s in ('Before','')],'DKROnlineSetupChecks','DKROnlinePartyChecks','DKRDirectoryLifecycleChecks']
     if a.sanitizer:names.append('DKRVehicleOriginalSanitizerChecks')
     if a.portraits:names.append('DKRCharacterPortraitChecks')
     a.log.parent.mkdir(parents=True,exist_ok=True)

@@ -2,11 +2,11 @@
 from pathlib import Path
 import argparse,importlib.util,json,sys
 sys.dont_write_bytecode=True
-AUTH=Path(__file__).resolve().parent;ROOT=AUTH.parents[2];VERSION='1.0.11'
+AUTH=Path(__file__).resolve().parent;ROOT=AUTH.parents[2];VERSION=(ROOT/'VERSION').read_text().strip()
 def load(name,path):
     s=importlib.util.spec_from_file_location(name,path);m=importlib.util.module_from_spec(s);s.loader.exec_module(m);return m
 def inspect(build,binary,baseline,accepted):
-    previous=ROOT/'patches/vehicle-original-textures';saved=sys.modules.get('pipeline')
+    previous=ROOT/'patches/online-performance';saved=sys.modules.get('pipeline')
     try:
         pipeline=load('release111_vehicle_pipeline',previous/'pipeline.py');pipeline.VERSION=VERSION
         sys.modules['pipeline']=pipeline
@@ -27,7 +27,7 @@ def inspect(build,binary,baseline,accepted):
         data=binary.read_bytes()
         for old in ('1.0.10-vehicle-playtest.','1.0.10-render-playtest.','1.0.10-memory-playtest.'):
             if old.encode() in data or old.encode('utf-16le') in data:raise ValueError('Old playtest label linked')
-    result['label']='v1.0.11 Release Build'
+    result['label']='v'+VERSION+' Release Build'
     return result
 if __name__=='__main__':
     p=argparse.ArgumentParser(description=__doc__)

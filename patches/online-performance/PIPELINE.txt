@@ -1,5 +1,5 @@
 Additive Patch Pipeline: patches/online-performance
-Version: 1.0.11-online-playtest.1
+Version: 1.0.11-online-playtest.2
 
 Composes after vehicle-original-textures, retaining the completed v1.0.11
 memory/render repairs and playtest 4 online/spectator chain. Authored changes
@@ -10,7 +10,7 @@ Submodules, RecompiledFuncs and RecompiledPatches are read-only inputs.
 2. Run configure.py with --build, --capsule, --log and --cmake for each host.
 3. Build DKRPortGame, all release-prep/v1.0.11/run_checks.py targets, the two
    vehicle fixtures and DKROnlineMenu77Checks, DKROnlineMenu80Checks,
-   DKROnlineSetupChecks and DKROnlinePartyChecks. Build the Linux vehicle
+   DKROnlineSetupChecks, DKROnlinePartyChecks and DKRDirectoryLifecycleChecks. Build the Linux vehicle
    sanitizer fixture too. Never run a game, user ROM, RSP or GPU workload.
 4. Run the retained checks and this layer's run_checks.py. audit.py checks
    exact source composition, actual compiler bindings and compatibility IDs.
@@ -38,3 +38,12 @@ calls and invalid full-scene/owner modes continue to fail safely.
 
 New peer IDs prevent old builds joining this owner contract. Updater signatures,
 stable release files, website deployment and main are outside this playtest.
+
+Disconnect and terminal failure clear the directory hosting state, admission
+proofs and bridge queues while the DirectSession mutex is held. This
+does not rely on another transport pump and does not disconnect the account.
+The existing directory worker sends Close and the existing service removes the
+listing/code and pending joins. No website/API deployment is required.
+The next authenticated join's pending key survives room cleanup; only the
+destructor forgets the whole directory session. The lifecycle fixture exercises
+the production bootstrap transfer, disconnect and one-time key consumption.

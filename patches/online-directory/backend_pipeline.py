@@ -1,61 +1,118 @@
-"""Compose an owner-deployed API bundle over the pinned current library Worker."""
+"""Bundle the maintained API modules for owner deployment; never deploy them."""
 from pathlib import Path
-import argparse,difflib,hashlib,json,shutil,zipfile
-AUTH=Path(__file__).resolve().parent
-ROOT=AUTH.parents[1]
-API=ROOT/'build/library-workflow-20261023-r8/stage/PRIVATE-API/worker-single-file.mjs'
-EVIDENCE=ROOT/'artifacts/DKR-R-Public-Lobbies-Plan-20261024-r1/EVIDENCE.json'
-def sha(raw):return hashlib.sha256(raw).hexdigest()
-def once(text,old,new):
-    if text.count(old)!=1:raise ValueError('API entry point changed: '+old[:100])
-    return text.replace(old,new,1)
-def compose(output):
-    if output.exists():raise ValueError('Choose a fresh owner bundle directory')
-    evidence=json.loads(EVIDENCE.read_text(encoding='utf-8'))
-    original=API.read_bytes()
-    expected=evidence['reviewed_inputs_sha256'][API.as_posix()]
-    if sha(original)!=expected:raise ValueError('The approved local API baseline changed; rebase before composing')
-    worker=original.decode('utf-8')
-    worker=once(worker,'export default {\n  async fetch(request, env, ctx) {',
-        (AUTH/'backend/gateway.inl').read_text(encoding='utf-8')+'\nexport default {\n  async fetch(request, env, ctx) {')
-    anchor='''  async fetch(request, env, ctx) {
-    let response;
-    try {
-      const url = new URL(request.url);'''
-    worker=once(worker,anchor,anchor+'''
-      const onlineResponse = await handleOnlineDirectory(request, env);
-      if (onlineResponse) return onlineResponse;''')
+import argparse
+import hashlib
+import json
+import shutil
+import subprocess
+import zipfile
+
+AUTH = Path(__file__).resolve().parent
+ROOT = AUTH.parents[1]
+PROFILE = ROOT / 'runtime-recomp/src/game/online_profile'
+
+
+def sha(raw):
+    return hashlib.sha256(raw).hexdigest()
+
+
+def compose(output, esbuild, rollback_api=None, rollback_directory=None):
+    if output.exists():
+        raise ValueError('Choose a fresh owner bundle directory')
+    if not esbuild or not esbuild.is_file():
+        raise ValueError('Pass --esbuild with the esbuild 0.28.2 executable')
+    version = subprocess.check_output([str(esbuild), '--version'], text=True).strip()
+    if version != '0.28.2':
+        raise ValueError('Use the pinned esbuild 0.28.2 bundler')
     output.mkdir(parents=True)
-    (output/'PRIVATE-API').mkdir();(output/'ONLINE-WORKER').mkdir();(output/'ROLLBACK').mkdir()
-    (output/'PRIVATE-API/worker-single-file.mjs').write_text(worker,encoding='utf-8',newline='\n')
-    (output/'ROLLBACK/worker-single-file.mjs').write_bytes(original)
-    (output/'REVIEW.patch').write_text(''.join(difflib.unified_diff(original.decode('utf-8').splitlines(True),worker.splitlines(True),
-        fromfile='before/worker-single-file.mjs',tofile='after/worker-single-file.mjs')),encoding='utf-8')
-    for name in ('directory.mjs','wrangler-online.jsonc'):shutil.copy2(AUTH/'backend'/name,output/'ONLINE-WORKER'/name)
-    for name in ('DEPLOYMENT.md','PLAYTEST.txt','IMPLEMENTATION.txt','QA.md'):shutil.copy2(AUTH/name,output/name)
-    (output/'PRIVATE-API/BINDINGS-TO-MERGE.jsonc').write_text(json.dumps({
-        'services':[{'binding':'ONLINE_DIRECTORY','service':'dkrr-online-directory'}],
-        'vars':{'ONLINE_ENABLED':'false','RUNNING_SPECTATORS_ENABLED':'false'}},indent=2)+'\n',encoding='utf-8')
-    receipt={'schema':1,'feature':'dkrr-online-directory-v1','published':False,
-        'source_api_sha256':expected,'api_baseline':'Local library-workflow r8 bundle reviewed in the approved plan',
-        'authoring_sha256':{p.relative_to(AUTH).as_posix():sha(p.read_bytes()) for p in sorted(AUTH.rglob('*')) if p.is_file() and '__pycache__' not in p.parts},
-        'files':{p.relative_to(output).as_posix():sha(p.read_bytes()) for p in sorted(output.rglob('*')) if p.is_file()}}
-    (output/'BUNDLE-RECEIPT.json').write_text(json.dumps(receipt,indent=2)+'\n',encoding='utf-8')
-    print('Owner API bundle composed; no FTP, database or service deployment performed:',output)
+    for name in ('PRIVATE-API', 'ONLINE-WORKER', 'ROLLBACK'):
+        (output / name).mkdir()
+    # Ordinary ES modules are the source of truth. Bundling does not patch a
+    # frozen Worker, rewrite authored source, or run a deployed service.
+    subprocess.run([
+        str(esbuild), str(PROFILE / 'backend/worker.mjs'), '--bundle', '--format=esm',
+        '--platform=neutral', '--target=es2022', '--legal-comments=inline', '--external:cloudflare:*',
+        '--outfile=' + str(output / 'PRIVATE-API/worker-single-file.mjs'),
+        '--metafile=' + str(output / 'API-BUILD-INPUTS.json'),
+    ], check=True)
+    shutil.copy2(PROFILE / 'backend/discord_schema.sql', output / 'PRIVATE-API/001-launcher-discord-profiles.sql')
+    shutil.copy2(PROFILE / 'profile_schema.sql', output / 'PRIVATE-API/002-launcher-profiles.sql')
+    for name in ('directory.mjs', 'wrangler-online.jsonc'):
+        shutil.copy2(AUTH / 'backend' / name, output / 'ONLINE-WORKER' / name)
+    for source, name in ((rollback_api, 'worker-single-file.mjs'), (rollback_directory, 'directory.mjs')):
+        if source:
+            if not source.is_file():
+                raise ValueError('Rollback source is missing: ' + str(source))
+            shutil.copy2(source, output / 'ROLLBACK' / name)
+    for name in ('DEPLOYMENT.md', 'PLAYTEST.txt', 'IMPLEMENTATION.txt', 'QA.md'):
+        shutil.copy2(AUTH / name, output / name)
+    (output / 'DISCORD-PROFILE-DEPLOYMENT.txt').write_text('''Friends and profile pictures update
+
+1. Back up the currently deployed private API Worker, online-directory Worker
+   and D1 database. Keep these backups for rollback.
+2. Run PRIVATE-API/001-launcher-discord-profiles.sql, then 002-launcher-profiles.sql
+   against the existing private API D1 database. Both migrations are idempotent.
+3. Update the code of the existing online-directory Worker with
+   ONLINE-WORKER/directory.mjs. Keep its bindings, Durable Object migration and
+   current ONLINE_ENABLED and RUNNING_SPECTATORS_ENABLED values.
+4. Update the existing private API Worker with PRIVATE-API/worker-single-file.mjs.
+   Keep all current bindings, variables and secrets. No new service binding is needed.
+5. Use the matching test launchers. Sign out and back in with Discord once to
+   populate its name and image metadata. The launcher offers separate choices.
+6. Online Profile now lets you choose and preview a PNG or JPG, select Discord's
+   image, or use initials. Save Picture applies the picture and sharing choice.
+
+No FTP website files are needed. The current mod upload method is unchanged.
+The API stores one small avatar per account and a separate verified friend link
+for each launcher identity. Original image files and metadata are not uploaded.
+Friends and lobby players only receive the selected picture when sharing is on.
+Without the API update, existing online play remains available and profiles explain
+why picture import is unavailable. Gameplay transport and rollback are unchanged.
+
+For rollback, restore the private API and online-directory code from your backups
+or the supplied ROLLBACK files. The added tables can remain. Keep current bindings
+and feature settings. A new installation still needs the existing directory setup.
+''', encoding='utf-8')
+    sources = [*sorted((PROFILE / 'backend').glob('*')), PROFILE / 'profile_schema.sql',
+               AUTH / 'backend/directory.mjs', AUTH / 'backend/wrangler-online.jsonc']
+    receipt = {
+        'schema': 2, 'feature': 'dkrr-friends-profile-pictures', 'published': False,
+        'bundler': {'version': version, 'sha256': sha(esbuild.read_bytes())},
+        'authoring_sha256': {p.relative_to(ROOT).as_posix(): sha(p.read_bytes()) for p in sources if p.is_file()},
+        'files': {p.relative_to(output).as_posix(): sha(p.read_bytes()) for p in sorted(output.rglob('*')) if p.is_file()},
+    }
+    (output / 'BUNDLE-RECEIPT.json').write_text(json.dumps(receipt, indent=2) + '\n', encoding='utf-8')
+    print('Owner API bundle composed; no FTP, database or service deployment performed:', output)
+
+
 def verify(output):
-    receipt=json.loads((output/'BUNDLE-RECEIPT.json').read_text(encoding='utf-8'))
-    for name,digest in receipt['files'].items():
-        if sha((output/name).read_bytes())!=digest:raise ValueError('Bundle file changed: '+name)
-    if receipt['published']:raise ValueError('Unexpected deployment claim')
+    receipt = json.loads((output / 'BUNDLE-RECEIPT.json').read_text(encoding='utf-8'))
+    for name, digest in receipt['files'].items():
+        if sha((output / name).read_bytes()) != digest:
+            raise ValueError('Bundle file changed: ' + name)
+    if receipt['published']:
+        raise ValueError('Unexpected deployment claim')
     print('Owner bundle hashes verified.')
-if __name__=='__main__':
-    p=argparse.ArgumentParser(description=__doc__);p.add_argument('--output',type=Path,required=True);p.add_argument('--archive',type=Path);p.add_argument('--verify',action='store_true');a=p.parse_args()
-    if not a.verify:compose(a.output)
-    verify(a.output)
-    if a.archive:
-        if a.archive.exists():raise ValueError('Choose a fresh bundle archive')
-        a.archive.parent.mkdir(parents=True,exist_ok=True)
-        with zipfile.ZipFile(a.archive,'w',zipfile.ZIP_DEFLATED) as archive:
-            for path in sorted(a.output.rglob('*')):
-                if path.is_file():archive.write(path,path.relative_to(a.output).as_posix())
-        print('Owner bundle archive:',a.archive,sha(a.archive.read_bytes()))
+
+
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--output', type=Path, required=True)
+    parser.add_argument('--esbuild', type=Path)
+    parser.add_argument('--rollback-api', type=Path)
+    parser.add_argument('--rollback-directory', type=Path)
+    parser.add_argument('--archive', type=Path)
+    parser.add_argument('--verify', action='store_true')
+    args = parser.parse_args()
+    if not args.verify:
+        compose(args.output, args.esbuild, args.rollback_api, args.rollback_directory)
+    verify(args.output)
+    if args.archive:
+        if args.archive.exists():
+            raise ValueError('Choose a fresh bundle archive')
+        args.archive.parent.mkdir(parents=True, exist_ok=True)
+        with zipfile.ZipFile(args.archive, 'x', zipfile.ZIP_DEFLATED) as archive:
+            for path in sorted(args.output.rglob('*')):
+                if path.is_file():
+                    archive.write(path, path.relative_to(args.output).as_posix())
+        print('Owner bundle archive:', args.archive, sha(args.archive.read_bytes()))

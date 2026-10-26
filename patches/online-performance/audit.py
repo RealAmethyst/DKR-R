@@ -63,6 +63,8 @@ def inspect(build,binary,baseline,accepted):
     ids={k:pipeline.sha((v+'\n'+ledger).encode()) for k,v in retained['rollback_build_ids'].items()}
     need(ids==json.loads((stage/'contracts.json').read_text()),'Peer derivation differs')
     sources=compiled(build,'DKROnlinePartyChecks');need((stage/'party_checks.cpp').resolve() in sources,'Actual party fixture not bound')
+    lifecycle=ROOT/'runtime-recomp/tests/direct_session_tests.cpp'
+    need(lifecycle.resolve() in compiled(build,'DKRDirectoryLifecycleChecks'),'Production directory lifecycle fixture not bound')
     unchanged=json.loads(baseline.read_text())
     for row in unchanged:need(pipeline.sha((ROOT/row['path']).read_bytes())==row['sha256'],'Pre-existing source changed: '+row['path'])
     if binary:

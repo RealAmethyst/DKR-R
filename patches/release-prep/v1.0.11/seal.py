@@ -1,7 +1,7 @@
 """Seal signed packages and generate exact manual GitHub upload instructions."""
 from pathlib import Path
 import argparse,hashlib,json,shutil,subprocess,sys
-AUTH=Path(__file__).resolve().parent;ROOT=AUTH.parents[2]
+AUTH=Path(__file__).resolve().parent;ROOT=AUTH.parents[2];VERSION=(ROOT/'VERSION').read_text().strip()
 def sha(p):
     with p.open('rb') as f:return hashlib.file_digest(f,'sha256').hexdigest()
 if __name__=='__main__':
@@ -14,10 +14,10 @@ if __name__=='__main__':
         path=a.work/'windows'/('updater-'+case+'.log')
         if not path.is_file() or b'PASS:' not in path.read_bytes() or b'Traceback' in path.read_bytes():raise ValueError('Updater qualification failed: '+case)
         shutil.copy2(path,a.output/'Evidence'/path.name)
-    (a.output/'UPLOAD.txt').write_text('DKR-R v1.0.11 - GitHub upload\n\nRelease title: DKR-R v1.0.11 Release Build\nTag: Version1.0.11\nSource commit: '+head+'\n\n'
+    (a.output/'UPLOAD.txt').write_text('DKR-R v'+VERSION+' - GitHub upload\n\nRelease title: DKR-R v'+VERSION+' Release Build\nTag: Version'+VERSION+'\nSource commit: '+head+'\n\n'
         'Create a draft release at that exact commit. Upload:\n'
-        'DKR-R-1.0.11-Windows-x64.zip\nDKR-R-1.0.11-Linux-x86_64.AppImage\n'
-        'DKR-R-1.0.11-Linux-aarch64.AppImage\nDKR-R-1.0.11-SteamDeck-x86_64.AppImage\n'
+        'DKR-R-'+VERSION+'-Windows-x64.zip\nDKR-R-'+VERSION+'-Linux-x86_64.AppImage\n'
+        'DKR-R-'+VERSION+'-Linux-aarch64.AppImage\nDKR-R-'+VERSION+'-SteamDeck-x86_64.AppImage\n'
         'DKR-R-update.json\nDKR-R-update.sig\nSHA256SUMS.txt\n\n'
         'Paste RELEASE-NOTES.txt as the description. The changelog TXT can also\n'
         'be attached. Evidence is for review; do not upload keys or source backups.\n'

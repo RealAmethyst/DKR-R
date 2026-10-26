@@ -272,6 +272,10 @@ target_include_directories(DKRNetplayCrypto PUBLIC
 
 include(cmake/Updates.cmake)
 
+set(DKR_FRIEND_SERVICE_SOURCE src/game/netplay/friend_service.cpp)
+if(NOT DKR_RUNTIME_BUILD_GENERATED)
+    set(DKR_FRIEND_SERVICE_SOURCE src/game/online_profile/friend_service.cpp)
+endif()
 add_library(DKRNetplayCore STATIC
     src/game/netplay/authoritative_state.cpp
     src/game/netplay/authoritative_state_codec.cpp
@@ -280,7 +284,7 @@ add_library(DKRNetplayCore STATIC
     src/game/netplay/direct_session.cpp
     src/game/netplay/online_mod_admission.cpp
     src/game/netplay/failure_recorder.cpp
-    src/game/netplay/friend_service.cpp
+    ${DKR_FRIEND_SERVICE_SOURCE}
     src/game/netplay/gekko_direct_adapter.cpp
     src/game/netplay/lan_discovery.cpp
     src/game/netplay/netplay_lobby.cpp
@@ -2612,6 +2616,26 @@ if(BUILD_TESTING)
         DKR_RUNTIME_HAS_RT64=0
     )
     add_test(NAME DKRInputProfile COMMAND DKRInputProfileTests)
+
+    add_executable(DKROnlineProfileTests tests/online_profile_tests.cpp)
+    target_compile_features(DKROnlineProfileTests PRIVATE cxx_std_20)
+    target_include_directories(DKROnlineProfileTests PRIVATE "${CMAKE_CURRENT_LIST_DIR}/src/game")
+    add_test(NAME DKROnlineProfile COMMAND DKROnlineProfileTests)
+    add_executable(DKRProfilePictureTests tests/profile_picture_tests.cpp)
+    target_compile_features(DKRProfilePictureTests PRIVATE cxx_std_20)
+    target_include_directories(DKRProfilePictureTests PRIVATE "${CMAKE_CURRENT_LIST_DIR}/src/game" "${DKRPORT_ROOT}/extern/rt64/src/contrib")
+    add_test(NAME DKRProfilePictures COMMAND DKRProfilePictureTests)
+    add_executable(DKRProfileBridgeTests tests/profile_bridge_tests.cpp)
+    target_compile_features(DKRProfileBridgeTests PRIVATE cxx_std_20)
+    target_include_directories(DKRProfileBridgeTests PRIVATE "${CMAKE_CURRENT_LIST_DIR}/src/game")
+    target_link_libraries(DKRProfileBridgeTests PRIVATE DKRNetplayCore)
+    add_test(NAME DKRProfileBridge COMMAND DKRProfileBridgeTests)
+
+    add_executable(DKRLiveFovTests tests/live_fov_tests.cpp)
+    target_compile_features(DKRLiveFovTests PRIVATE cxx_std_20)
+    target_include_directories(DKRLiveFovTests PRIVATE "${CMAKE_CURRENT_LIST_DIR}/src/game"
+        "${DKR_DEPENDENCIES_DIR}/n64-modern-runtime/N64Recomp/include")
+    add_test(NAME DKRLiveFov COMMAND DKRLiveFovTests)
 
     add_test(NAME DKRTestAssertionContract
         COMMAND "${CMAKE_COMMAND}"

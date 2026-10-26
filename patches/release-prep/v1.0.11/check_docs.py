@@ -25,6 +25,6 @@ if __name__=='__main__':
     counts={}
     for r in inventory:counts[r['disposition']]=counts.get(r['disposition'],0)+1
     (a.evidence/'DOCUMENTATION-INVENTORY.json').write_text(json.dumps(inventory,indent=2)+'\n')
-    report={'version':'1.0.11','documents':len(inventory),'dispositions':counts,'local_links_checked':links,'broken_links':broken}
+    report={'version':(ROOT/'VERSION').read_text().strip(),'documents':len(inventory),'dispositions':counts,'local_links_checked':links,'broken_links':broken}
     (a.evidence/'DOCUMENTATION-CHECKS.json').write_text(json.dumps(report,indent=2)+'\n')
     print(json.dumps(report,indent=2))

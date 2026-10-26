@@ -9,4 +9,4 @@ if __name__=='__main__':
     p.add_argument('--cmake',default='cmake');a=p.parse_args()
     s=importlib.util.spec_from_file_location('performance_configure',ROOT/'patches/release-prep/v1.0.7/release.py')
     m=importlib.util.module_from_spec(s);s.loader.exec_module(m)
-    m.AUTH=AUTH;m.VERSION='1.0.11-online-playtest.1';m.configure(a.build,a.log,a.cmake,a.capsule)
+    m.AUTH=AUTH;m.VERSION='1.0.11-online-playtest.2';m.configure(a.build,a.log,a.cmake,a.capsule)
