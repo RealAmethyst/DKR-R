@@ -153,6 +153,20 @@ class DiffScopeTests(unittest.TestCase):
         self.assertEqual(status, 1)
         self.assertIn("patches/new-layer/ReleaseOverlay.cmake:1: PG001", out)
 
+    def test_checkout_root_and_ignored_nested_builds(self):
+        nested = self.root / "source" / "nested"
+        nested.mkdir(parents=True)
+        self.assertEqual(pattern_guard._git_toplevel(self.root), self.root.resolve())
+        self.assertEqual(pattern_guard._git_toplevel(nested), self.root.resolve())
+        (self.root / ".gitignore").write_text(".deps/\npackaging/**/build/\n")
+        for name in (".deps/library/build/cache.lib", "packaging/android/app/build/generated/cache.json"):
+            path = self.root / name
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_text("generated\n")
+        tree = pattern_guard.Tree(self.root)
+        self.assertTrue(tree.is_git)
+        self.assertFalse(any(path.startswith((".deps/", "packaging/")) for path in tree.files))
+
     def test_diff_scope_sees_untracked_files(self):
         (self.root / "patches/feature/NOTES.txt").write_text("notes\n")
         status, out, _ = run_guard(self.root, "--diff", "HEAD")

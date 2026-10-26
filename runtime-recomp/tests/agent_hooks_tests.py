@@ -60,6 +60,9 @@ def git(root, *args):
 
 
 class PreEditGuardTests(unittest.TestCase):
+    def test_checkout_is_found_from_a_nested_directory(self):
+        self.assertEqual(hooklib.checkout_of(HOOKS), ROOT)
+
     def test_blocks_a_new_overlay_cmake_layer(self):
         result = run_hook(
             "pre_edit_guard.py",

@@ -457,12 +457,14 @@ class Tree:
 
 def _git_toplevel(root: Path) -> Path | None:
     result = subprocess.run(
-        ["git", "-C", str(root), "rev-parse", "--show-toplevel"],
+        ["git", "-C", str(root), "rev-parse", "--show-cdup"],
         stdout=subprocess.PIPE,
         stderr=subprocess.DEVNULL,
         text=True,
     )
-    return Path(result.stdout.strip()).resolve() if result.returncode == 0 else None
+    # Relative output works with native Git and MSYS2 Git alike. An absolute
+    # MSYS path (/c/... or a mounted /home/...) is not a native Windows path.
+    return (root / result.stdout.strip()).resolve() if result.returncode == 0 else None
 
 
 def _git_lines(root: Path, *args: str) -> list[str]:
