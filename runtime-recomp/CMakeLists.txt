@@ -2637,6 +2637,12 @@ if(BUILD_TESTING)
         "${DKR_DEPENDENCIES_DIR}/n64-modern-runtime/N64Recomp/include")
     add_test(NAME DKRLiveFov COMMAND DKRLiveFovTests)
 
+    add_executable(DKRModStoreHistoryTests tests/mod_store_history_tests.cpp)
+    target_compile_features(DKRModStoreHistoryTests PRIVATE cxx_std_20)
+    target_include_directories(DKRModStoreHistoryTests PRIVATE "${CMAKE_CURRENT_LIST_DIR}/src/game"
+        "${DKRPORT_ROOT}/extern/rt64/src/contrib")
+    add_test(NAME DKRModStoreHistory COMMAND DKRModStoreHistoryTests)
+
     add_test(NAME DKRTestAssertionContract
         COMMAND "${CMAKE_COMMAND}"
             "-DTEST_BINARY_DIR=${CMAKE_CURRENT_BINARY_DIR}/test-assertion-contract"

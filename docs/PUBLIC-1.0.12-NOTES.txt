@@ -15,6 +15,8 @@ FOV slider so you can see it changing while you play.
 - Added remembered Discord sign-in on Linux and Steam Deck without a keyring.
 - Made the offline FOV slider work live, including while paused.
 - Fixed logging after an updater restart and improved join diagnostics.
+- Fixed installed Store mods showing up in Needs Attention after a restart.
+  You won't need to download those installed mods again.
 
 All the existing memory, HUD, modded lobby and spectator fixes are kept.
 Your saves, mods and settings can stay. Please use the complete v1.0.12
