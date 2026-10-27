@@ -154,6 +154,34 @@ def friends_layout(text,out):
     return text[:grid_start]+grid+text[grid_end:]
 
 def account_service(text,out):
+    # Extend the retained service at its existing composition point. The history
+    # policy is normal first-party source, shared with the ROM-free host tests.
+    history=ROOT/'runtime-recomp/src/game/mod_store/download_history.hpp'
+    text='#include "'+history.as_posix()+'"\n'+text
+    begin=text.index('        Json rows = Json::array();',text.index('    void persist_downloads()'))
+    end=text.index('\n    }',begin)
+    text=text[:begin]+'''        Json saved;
+        {
+            std::lock_guard lock(mutex);
+            saved = dkr::store::history::save(state.downloads);
+        }
+        write_json(root / "downloads.json", saved);'''+text[end:]
+    text=once(text,'        const auto saved = read_json(p.root / "downloads.json");',
+        '''        const auto saved = read_json(p.root / "downloads.json");
+        const auto receipts = read_json(p.root / "installations.json");
+        auto restored = dkr::store::history::restore<Download>(saved, receipts, [&](const std::string& path) {
+            return dkr::store::history::member_present(p.root.parent_path(), path);
+        });''')
+    begin=text.index('            if (saved.contains("jobs")')
+    end=text.index('\n        });',begin)
+    text=text[:begin]+'            s.downloads = std::move(restored);'+text[end:]
+    text=once(text,'            s.downloads = std::move(restored);\n        });',
+        '''            s.downloads = std::move(restored);
+        });
+        if (saved.is_object() && saved.contains("jobs") && saved["jobs"].is_array() &&
+            saved["jobs"].size() <= 64 && (!saved.contains("schema") || saved["schema"] == 1 || saved["schema"] == 2)) {
+            try { p.persist_downloads(); } catch (const std::exception& error) { p.fail(error); }
+        }''')
     text=once(text,'namespace dkr::store {',
         '#include "'+(out/'display_name_save.hpp').as_posix()+'"\n#include "'+(out/'profile_bridge.hpp').as_posix()+'"\n#include "'+(out/'picture_codec.hpp').as_posix()+'"\n#include "'+(out/'profile_retry.hpp').as_posix()+'"\n#define DKR_PROFILE_WITH_KEYRING 1\n#include "'+(out/'linux_device_store.hpp').as_posix()+'"\n\nnamespace dkr::store {')
     for operation in ('store','load','clear'):

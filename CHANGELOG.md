@@ -20,6 +20,8 @@ I've focused on modded lobby joining and made the Online menus easier to use.
 - Live offline FOV adjustment, including paused races, with the corrected guest
   register handling. Existing online restrictions stay.
 - Windows updater log handoff and better session diagnostics.
+- Fixed installed Store mods returning to Needs Attention after restarting.
+  Existing completed entries are recovered without downloading them again.
 - Integrated the patch guardrail setup and follow-ups from PRs #76–#78. The full
   source consolidation remains separate.
 - Updated current guides and prepared Windows x64, both Linux AppImages and the
