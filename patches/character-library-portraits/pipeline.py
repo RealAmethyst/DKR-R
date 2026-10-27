@@ -163,7 +163,7 @@ def account_service(text,out):
     text=text[:begin]+'''        Json saved;
         {
             std::lock_guard lock(mutex);
-            saved = dkr::store::history::save(state.downloads);
+            saved = dkr::store::history::save<Json>(state.downloads);
         }
         write_json(root / "downloads.json", saved);'''+text[end:]
     text=once(text,'        const auto saved = read_json(p.root / "downloads.json");',

@@ -3,22 +3,21 @@
 #include <algorithm>
 #include <cstdint>
 #include <filesystem>
-#include <json/json.hpp>
 #include <string>
 #include <string_view>
+#include <utility>
 #include <vector>
 
 namespace dkr::store::history {
-using Json = nlohmann::json;
 inline constexpr std::uint64_t max_package_bytes = 2ULL * 1024 * 1024 * 1024;
 
-inline std::string field(const Json& value, const char* name, std::size_t limit) {
+template <class Json> std::string field(const Json& value, const char* name, std::size_t limit) {
     if (!value.is_object())
         return {};
     const auto it = value.find(name);
     if (it == value.end() || !it->is_string())
         return {};
-    const auto& text = it->get_ref<const std::string&>();
+    const auto& text = it->template get_ref<const std::string&>();
     return text.size() <= limit ? text : std::string{};
 }
 
@@ -34,22 +33,26 @@ inline bool digest(std::string_view value) {
     });
 }
 
-inline std::uint64_t bytes(const Json& value) {
+template <class Json> std::uint64_t bytes(const Json& value) {
     if (!value.is_object())
         return 0;
     const auto it = value.find("bytes");
     if (it == value.end() || !it->is_number_unsigned())
         return 0;
-    const auto result = it->get<std::uint64_t>();
+    const auto result = it->template get<std::uint64_t>();
     return result <= max_package_bytes ? result : 0;
 }
 
 // Only used by the background history loader. This never claims ownership,
 // hashes whole packages, changes files or replaces native-library repair checks.
+inline std::filesystem::path utf8_path(std::string_view value) {
+    return std::filesystem::path(std::u8string(value.begin(), value.end()));
+}
+
 inline bool member_present(const std::filesystem::path& config, const std::string& relative) {
     if (relative.empty() || relative.find_first_of("\\:") != relative.npos)
         return false;
-    const auto path = std::filesystem::u8path(relative);
+    const auto path = utf8_path(relative);
     if (path.is_absolute() || path.has_root_name())
         return false;
     auto at = config;
@@ -66,7 +69,7 @@ inline bool member_present(const std::filesystem::path& config, const std::strin
     return true;
 }
 
-template <class Job, class Present>
+template <class Job, class Json, class Present>
 const Json* completed_receipt(const Job& job, const Json& registry, Present&& present) {
     if (!registry.is_object() || !registry.contains("schema") || registry["schema"] != 1 ||
         !registry.contains("records") || !registry["records"].is_array())
@@ -94,7 +97,7 @@ const Json* completed_receipt(const Job& job, const Json& registry, Present&& pr
     return nullptr;
 }
 
-template <class Job, class Present>
+template <class Job, class Json, class Present>
 std::vector<Job> restore(const Json& saved, const Json& registry, Present&& present) {
     std::vector<Job> result;
     if (!saved.is_object() || !saved.contains("jobs") || !saved["jobs"].is_array() || saved["jobs"].size() > 64)
@@ -146,7 +149,7 @@ std::vector<Job> restore(const Json& saved, const Json& registry, Present&& pres
     return result;
 }
 
-template <class Jobs> Json save(const Jobs& jobs) {
+template <class Json, class Jobs> Json save(const Jobs& jobs) {
     Json rows = Json::array();
     for (const auto& job : jobs)
         rows.push_back({{"item", job.item}, {"release", job.release}, {"title", job.title},

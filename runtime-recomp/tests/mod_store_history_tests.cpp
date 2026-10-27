@@ -1,4 +1,5 @@
 #include "mod_store/download_history.hpp"
+#include <json/json.hpp>
 #include <chrono>
 #include <fstream>
 #include <iostream>
@@ -6,6 +7,7 @@
 
 namespace {
 using namespace dkr::store::history;
+using Json = nlohmann::json;
 struct Job {
     std::string key, item, release, title, category, state, error, digest, version, intent, instance;
     std::filesystem::path file;
@@ -50,7 +52,7 @@ int main(int argc, char** argv) try {
     check(jobs.size() == 1 && jobs[0].state == "Installed" && jobs[0].error.empty());
     check(jobs[0].digest == hash && jobs[0].received == 100 && jobs[0].total == 100);
     for (unsigned restart = 0; restart < 5; ++restart) {
-        jobs = load(Json::parse(save(jobs).dump()));
+        jobs = load(Json::parse(save<Json>(jobs).dump()));
         check(jobs.size() == 1 && jobs[0].state == "Installed" && jobs[0].digest == hash);
     }
     auto legacy = row("Paused");
@@ -98,7 +100,7 @@ int main(int argc, char** argv) try {
         failed["error"] = "The package could not be verified.";
         jobs = load(saved(failed), receipt());
         check(jobs[0].state == "Failed" && jobs[0].error == failed["error"].get<std::string>());
-        check(load(Json::parse(save(jobs).dump()), receipt())[0].error == failed["error"].get<std::string>());
+        check(load(Json::parse(save<Json>(jobs).dump()), receipt())[0].error == failed["error"].get<std::string>());
     }
     for (const auto& malformed : {Json(), Json::array(), Json("invalid"), Json{{"jobs", "invalid"}},
                                   saved(row(), 99)})
@@ -137,9 +139,9 @@ int main(int argc, char** argv) try {
     if (argc == 4) {
         // Optional read-only inspection of copied records. Never save the
         // migrated result or open a launcher, account or network connection.
-        std::ifstream history_file(std::filesystem::u8path(argv[1])), receipt_file(std::filesystem::u8path(argv[2]));
+        std::ifstream history_file(utf8_path(argv[1])), receipt_file(utf8_path(argv[2]));
         const auto data = Json::parse(history_file), receipts = Json::parse(receipt_file);
-        const auto config = std::filesystem::u8path(argv[3]);
+        const auto config = utf8_path(argv[3]);
         const auto restored = restore<Job>(data, receipts, [&](const std::string& path) {
             return member_present(config, path);
         });
