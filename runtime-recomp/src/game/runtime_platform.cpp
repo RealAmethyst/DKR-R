@@ -1,6 +1,7 @@
 #include "runtime_platform.hpp"
 #include "application_layout.hpp"
 #include "audio_equalizer.hpp"
+#include "audio_output_policy.hpp"
 #include "controller_snapshot.hpp"
 #include "controller_mapping_policy.hpp"
 #include "custom_music.hpp"
@@ -95,6 +96,8 @@ std::mutex g_platform_mutex;
 std::mutex g_input_backend_transition_mutex;
 SDL_AudioDeviceID g_audio_device = 0;
 SDL_AudioDeviceID g_ui_audio_device = 0;
+// The Sound page's output device; empty is the system default.
+std::string g_audio_output_device;
 std::array<SDL_GameController*, kControllerCount> g_controllers{};
 struct ControllerRecord {
     SDL_GameController* controller = nullptr;
@@ -203,6 +206,28 @@ float SynthesiseCartridgeTone(double phase, float progress,
     return voice * 5000.0F * attack * release * pluck;
 }
 
+// Opens the chosen output device when it is connected, otherwise the system
+// default. A connected device that refuses to open also falls back.
+SDL_AudioDeviceID OpenOutputDeviceLocked(const SDL_AudioSpec& desired,
+                                         SDL_AudioSpec& obtained) {
+    const std::string name = g_audio_output_device.empty()
+        ? std::string{}
+        : dkr::runtime::audio::output_device_to_open(
+              g_audio_output_device, dkr::runtime::platform::audio_output_devices());
+    if (!name.empty()) {
+        const SDL_AudioDeviceID device =
+            SDL_OpenAudioDevice(name.c_str(), 0, &desired, &obtained, 0);
+        if (device != 0) {
+            return device;
+        }
+        std::fprintf(stderr, "[boot][audio] output device open failed, using the default: %s\n",
+                     SDL_GetError());
+    } else if (!g_audio_output_device.empty()) {
+        std::fprintf(stderr, "[boot][audio] output device not connected, using the default\n");
+    }
+    return SDL_OpenAudioDevice(nullptr, 0, &desired, &obtained, 0);
+}
+
 bool QueueStandaloneUiToneLocked(float frequency_hz,
                                  std::uint32_t duration_ms) {
     constexpr std::uint32_t kUiSampleRate = 48'000U;
@@ -213,8 +238,7 @@ bool QueueStandaloneUiToneLocked(float frequency_hz,
         desired.format = AUDIO_S16SYS;
         desired.channels = 2;
         desired.samples = 512;
-        g_ui_audio_device = SDL_OpenAudioDevice(
-            nullptr, 0, &desired, &obtained, 0);
+        g_ui_audio_device = OpenOutputDeviceLocked(desired, obtained);
         if (g_ui_audio_device == 0) {
             std::fprintf(stderr,
                          "[boot][audio] launcher cue device open failed: %s\n",
@@ -2361,15 +2385,11 @@ std::size_t dkr::runtime::platform::audio_frames_remaining() {
     return 0;
 }
 
-void dkr::runtime::platform::set_audio_frequency(std::uint32_t frequency) {
-    if (frequency == 0) {
-        return;
-    }
 #if DKR_RUNTIME_HAS_RT64
-    std::scoped_lock lock(g_platform_mutex);
-    if (g_audio_device != 0 && g_audio_frequency == frequency) {
-        return;
-    }
+namespace {
+// Closes the game and launcher cue devices and opens the game device on the
+// chosen output. The launcher cue device reopens on its next cue.
+void ReopenGameAudioLocked(std::uint32_t frequency) {
     if (g_audio_device != 0) {
         SDL_ClearQueuedAudio(g_audio_device);
         SDL_CloseAudioDevice(g_audio_device);
@@ -2392,7 +2412,7 @@ void dkr::runtime::platform::set_audio_frequency(std::uint32_t frequency) {
     // below the retail mix quantum; this changes host delivery granularity,
     // not DKR's emulated AI timing or sample production.
     desired.samples = 512;
-    g_audio_device = SDL_OpenAudioDevice(nullptr, 0, &desired, &obtained, 0);
+    g_audio_device = OpenOutputDeviceLocked(desired, obtained);
     if (g_audio_device == 0) {
         std::fprintf(stderr, "[boot][audio] open failed at %u Hz: %s\n",
                      frequency, SDL_GetError());
@@ -2408,8 +2428,67 @@ void dkr::runtime::platform::set_audio_frequency(std::uint32_t frequency) {
     g_audio_equalizer.reset();
     std::fprintf(stderr, "[boot][audio] device opened requested=%u actual=%d format=%04X channels=%u\n",
                  frequency, obtained.freq, obtained.format, obtained.channels);
+}
+} // namespace
+#endif
+
+void dkr::runtime::platform::set_audio_frequency(std::uint32_t frequency) {
+    if (frequency == 0) {
+        return;
+    }
+#if DKR_RUNTIME_HAS_RT64
+    std::scoped_lock lock(g_platform_mutex);
+    if (g_audio_device != 0 && g_audio_frequency == frequency) {
+        return;
+    }
+    ReopenGameAudioLocked(frequency);
 #else
     std::fprintf(stderr, "[boot][audio] frequency=%u (diagnostic backend)\n", frequency);
+#endif
+}
+
+std::vector<std::string> dkr::runtime::platform::audio_output_devices() {
+    std::vector<std::string> devices;
+#if DKR_RUNTIME_HAS_RT64
+    const int count = SDL_GetNumAudioDevices(0);
+    for (int index = 0; index < count; ++index) {
+        const char* name = SDL_GetAudioDeviceName(index, 0);
+        if (name != nullptr && *name != '\0' &&
+            dkr::runtime::audio::valid_output_device_name(name) &&
+            std::find(devices.begin(), devices.end(), name) == devices.end()) {
+            devices.emplace_back(name);
+        }
+    }
+#endif
+    return devices;
+}
+
+std::string dkr::runtime::platform::audio_output_device() {
+#if DKR_RUNTIME_HAS_RT64
+    std::scoped_lock lock(g_platform_mutex);
+    return g_audio_output_device;
+#else
+    return {};
+#endif
+}
+
+void dkr::runtime::platform::set_audio_output_device(std::string name) {
+    if (!dkr::runtime::audio::valid_output_device_name(name)) {
+        name.clear();
+    }
+#if DKR_RUNTIME_HAS_RT64
+    std::scoped_lock lock(g_platform_mutex);
+    if (name == g_audio_output_device) {
+        return;
+    }
+    g_audio_output_device = std::move(name);
+    if (g_audio_device != 0 && g_audio_frequency != 0) {
+        ReopenGameAudioLocked(g_audio_frequency);
+    } else if (g_ui_audio_device != 0) {
+        SDL_ClearQueuedAudio(g_ui_audio_device);
+        SDL_CloseAudioDevice(g_ui_audio_device);
+        g_ui_audio_device = 0;
+    }
 #endif
 }
 

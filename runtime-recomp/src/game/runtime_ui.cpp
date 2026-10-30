@@ -1715,6 +1715,8 @@ void SaveSettings() {
             if (g_sound_muted[channel]) sound_muted |= 1U << channel;
         }
         output << "sound_muted=" << sound_muted << '\n';
+        output << "audio_output_device="
+               << dkr::runtime::platform::audio_output_device() << '\n';
         if (g_eq_custom) {
             output << "eq_custom=" << (*g_eq_custom)[0] << ',' << (*g_eq_custom)[1]
                    << ',' << (*g_eq_custom)[2] << '\n';
@@ -2125,6 +2127,10 @@ void LoadSettings() {
         }
         if (key == "online_room_name") {
             copy_online_text(g_online_room_name, sizeof(g_online_room_name), value);
+            continue;
+        }
+        if (key == "audio_output_device") {
+            dkr::runtime::platform::set_audio_output_device(value);
             continue;
         }
         // Outside the chain below, which is already at MSVC's nesting limit.
