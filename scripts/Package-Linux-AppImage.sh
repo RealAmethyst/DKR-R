@@ -358,6 +358,12 @@ install -m 0644 "${PROJECT_ROOT}/extern/libdatachannel/deps/usrsctp/LICENSE.md" 
 install -m 0644 "${PROJECT_ROOT}/extern/prism/LICENSE" "${APPDIR}/usr/share/doc/dkr-port/licenses/PRISM-LICENSE.txt"
 install -m 0644 "${PROJECT_ROOT}/extern/prism/NOTICE" "${APPDIR}/usr/share/doc/dkr-port/licenses/PRISM-NOTICE.txt"
 cp -R "${PROJECT_ROOT}/extern/prism/LICENSES" "${APPDIR}/usr/share/doc/dkr-port/licenses/PRISM-LICENSES"
+# Binaural audio: Steam Audio with its own third-party notices (PFFFT, libmysofa,
+# the CIPIC HRTF and others), plus zlib and FlatBuffers, which those omit.
+install -m 0644 "${PROJECT_ROOT}/extern/steam-audio/LICENSE.md" "${APPDIR}/usr/share/doc/dkr-port/licenses/STEAM-AUDIO-LICENSE.md"
+install -m 0644 "${PROJECT_ROOT}/extern/steam-audio/core/THIRDPARTY.md" "${APPDIR}/usr/share/doc/dkr-port/licenses/STEAM-AUDIO-THIRDPARTY.md"
+install -m 0644 "${PROJECT_ROOT}/extern/steam-audio-deps/zlib/LICENSE" "${APPDIR}/usr/share/doc/dkr-port/licenses/ZLIB-LICENSE.txt"
+install -m 0644 "${PROJECT_ROOT}/extern/steam-audio-deps/flatbuffers/LICENSE.txt" "${APPDIR}/usr/share/doc/dkr-port/licenses/FLATBUFFERS-LICENSE.txt"
 install -m 0644 "${PROJECT_ROOT}/extern/libdatachannel/deps/json/LICENSE.MIT" "${APPDIR}/usr/share/doc/dkr-port/licenses/NLOHMANN-JSON-LICENSE.txt"
 install -m 0644 "${PROJECT_ROOT}/extern/libdatachannel/deps/plog/LICENSE" "${APPDIR}/usr/share/doc/dkr-port/licenses/PLOG-LICENSE.txt"
 install -m 0644 "${PROJECT_ROOT}/packaging/linux/dkr-port.appdata.xml" "${APPDIR}/usr/share/metainfo/dkr-port.appdata.xml"

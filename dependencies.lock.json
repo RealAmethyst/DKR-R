@@ -136,6 +136,46 @@
       "destination": "extern/prism",
       "recursive": false,
       "purpose": "MPL-2.0 screen reader speech output (Orca, NVDA, JAWS, VoiceOver) for accessibility"
+    },
+    {
+      "name": "steam-audio",
+      "repository": "https://github.com/ValveSoftware/steam-audio.git",
+      "commit": "0da18255cca520771f363ee01f100572b39a308e",
+      "destination": "extern/steam-audio",
+      "recursive": false,
+      "purpose": "Apache-2.0 Steam Audio v4.8.1 binaural (HRTF) rendering for positioned sounds with headphones; built from source without Intel IPP or Embree"
+    },
+    {
+      "name": "steam-audio-flatbuffers",
+      "repository": "https://github.com/google/flatbuffers.git",
+      "commit": "6df40a2471737b27271bdd9b900ab5f3aec746c7",
+      "destination": "extern/steam-audio-deps/flatbuffers",
+      "recursive": false,
+      "purpose": "Apache-2.0 FlatBuffers headers and flatc schema compiler at the revision Steam Audio v4.8.1 pins"
+    },
+    {
+      "name": "steam-audio-pffft",
+      "repository": "https://github.com/marton78/pffft.git",
+      "commit": "e0bf595c98ded55cc457a371c1b29c8cab552628",
+      "destination": "extern/steam-audio-deps/pffft",
+      "recursive": false,
+      "purpose": "BSD-licensed FFT library Steam Audio uses in place of Intel IPP, at the revision Steam Audio v4.8.1 pins"
+    },
+    {
+      "name": "steam-audio-zlib",
+      "repository": "https://github.com/madler/zlib.git",
+      "commit": "51b7f2abdade71cd9bb0e7a373ef2610ec6f9daf",
+      "destination": "extern/steam-audio-deps/zlib",
+      "recursive": false,
+      "purpose": "zlib-licensed decompression for libmysofa, at the revision Steam Audio v4.8.1 pins"
+    },
+    {
+      "name": "steam-audio-libmysofa",
+      "repository": "https://github.com/hoene/libmysofa.git",
+      "commit": "dd315a8ec1fee7193d40e4a59b12c5590a4a918c",
+      "destination": "extern/steam-audio-deps/libmysofa",
+      "recursive": false,
+      "purpose": "BSD-licensed SOFA HRTF file reader Steam Audio links, at the revision Steam Audio v4.8.1 pins"
     }
   ]
 }

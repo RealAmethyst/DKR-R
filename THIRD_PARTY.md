@@ -29,6 +29,11 @@ N64ModernRuntime must also satisfy GPL-3.0; see
 | DirectX Shader Compiler | Windows shader compilation | University of Illinois/NCSA and bundled notices |
 | dr_mp3 / dr_wav (mackron/dr_libs) | Decoding a custom track's own MP3/WAV music; vendored in `runtime-recomp/third_party/dr_libs` | Public domain (Unlicense) or MIT-0 |
 | Prism | Screen reader speech output (Orca, NVDA, JAWS, VoiceOver) for accessibility | MPL-2.0; incorporated libraries under their own licences (see `NOTICE`) |
+| Steam Audio (ValveSoftware/steam-audio) | Binaural (HRTF) rendering of positioned sounds with headphones; built from source without Intel IPP, Embree or the AMD GPU components | Apache-2.0; bundled CIPIC HRTF and other components under their own terms (see its `THIRDPARTY.md`) |
+| PFFFT | FFTs inside Steam Audio | BSD-like (FFTPACK) |
+| libmysofa | SOFA HRTF file reader inside Steam Audio | BSD-3-Clause |
+| zlib | Decompression for libmysofa | Zlib |
+| FlatBuffers | Steam Audio's serialisation headers and build-time schema compiler | Apache-2.0 |
 
 Exact dependency commits are recorded in `dependencies.lock.json`. Windows
 packages include applicable notices in `ThirdPartyLicenses`. Linux AppImages

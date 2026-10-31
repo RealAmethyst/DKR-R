@@ -333,6 +333,21 @@
           "sha256": "f65f1466f90204b187d66f2883fd63098c7a1553493dee4aacdb948a6d3dbc77"
         }
       ]
+    },
+    {
+      "name": "steam-audio-flatbuffers",
+      "repositoryPath": "extern/steam-audio-deps/flatbuffers",
+      "expectedCommit": "6df40a2471737b27271bdd9b900ab5f3aec746c7",
+      "patches": [
+        {
+          "path": "patches/steam-audio-flatbuffers/0001-use-absl-string-view-only-after-cxx14.patch",
+          "sha256": "1d623705622830408cb9fa6fd6829f179f5b144749b39011bd78ecf39fb4aae7"
+        },
+        {
+          "path": "patches/steam-audio-flatbuffers/0002-delete-table-key-comparator-assignment.patch",
+          "sha256": "b217acac582a20d397e499b277931c2b72131a719716a72d220ab800940d6115"
+        }
+      ]
     }
   ]
 }
