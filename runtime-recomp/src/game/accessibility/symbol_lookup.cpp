@@ -1,4 +1,4 @@
-#include "game_symbols.hpp"
+#include "symbol_lookup.hpp"
 
 #include "revision_addresses.hpp"
 

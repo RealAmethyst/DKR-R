@@ -24,7 +24,7 @@ target_link_libraries(DKRAccessibility PUBLIC Threads::Threads)
 # executable itself: as an archive they would precede the generated payloads
 # that reference them in GNU ld's left-to-right scan.
 set(DKR_ACCESSIBILITY_GAME_SOURCES
-    src/game/accessibility/game_symbols.cpp
+    src/game/accessibility/symbol_lookup.cpp
     src/game/accessibility/guest_memory.cpp
     src/game/accessibility/menu_speech.cpp
 )

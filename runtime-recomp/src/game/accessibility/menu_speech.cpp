@@ -2,7 +2,7 @@
 // scripts/accessibility_menu_policy.py composes into the recompiled game. The
 // handler runs on the game thread at the hooked instruction, reads only the
 // state the screen itself just drew or changed, and queues speech.
-#include "game_symbols.hpp"
+#include "symbol_lookup.hpp"
 #include "guest_text.hpp"
 #include "menu_events.hpp"
 #include "menu_speech_policy.hpp"
