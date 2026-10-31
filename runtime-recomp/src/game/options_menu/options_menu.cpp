@@ -10,6 +10,7 @@ namespace {
 
 constexpr std::array kRootItems{
     ItemDef{ItemId::GeneralOptions, ItemKind::Page, PageId::General},
+    ItemDef{ItemId::DisplayOptions, ItemKind::Page, PageId::Display},
     ItemDef{ItemId::AudioOptions, ItemKind::Page, PageId::Audio},
     ItemDef{ItemId::SaveOptions, ItemKind::Screen},
     ItemDef{ItemId::MagicCodes, ItemKind::Screen},
@@ -19,7 +20,109 @@ constexpr std::array kRootItems{
 constexpr std::array kGeneralItems{
     ItemDef{ItemId::Language, ItemKind::Setting},
     ItemDef{ItemId::Subtitles, ItemKind::Setting},
+};
+
+constexpr std::array kDisplayItems{
     ItemDef{ItemId::Presentation, ItemKind::Setting},
+    ItemDef{ItemId::WindowMode, ItemKind::Setting},
+    ItemDef{ItemId::PerformancePreset, ItemKind::Setting},
+    ItemDef{ItemId::Resolution, ItemKind::Setting},
+    ItemDef{ItemId::AspectRatio, ItemKind::Setting},
+    ItemDef{ItemId::FrameRate, ItemKind::Setting},
+    ItemDef{ItemId::AdvancedGraphics, ItemKind::Page, PageId::AdvancedGraphics},
+    ItemDef{ItemId::HudAndCamera, ItemKind::Page, PageId::HudAndCamera},
+    ItemDef{ItemId::Scenery, ItemKind::Page, PageId::Scenery},
+    ItemDef{ItemId::WaterAndLava, ItemKind::Page, PageId::WaterAndLava},
+    ItemDef{ItemId::PerformanceOverlay, ItemKind::Page, PageId::PerformanceOverlay},
+};
+
+constexpr std::array kAdvancedGraphicsItems{
+    ItemDef{ItemId::GraphicsApi, ItemKind::Setting},
+    ItemDef{ItemId::AntiAliasing, ItemKind::Setting},
+    ItemDef{ItemId::Anisotropy, ItemKind::Setting},
+    ItemDef{ItemId::ColourPrecision, ItemKind::Setting},
+    ItemDef{ItemId::Supersampling, ItemKind::Setting},
+    ItemDef{ItemId::TextureSharpness, ItemKind::Setting},
+    ItemDef{ItemId::TextureShimmering, ItemKind::Setting},
+};
+
+constexpr std::array kHudAndCameraItems{
+    ItemDef{ItemId::HudLayout, ItemKind::Setting},
+    ItemDef{ItemId::FieldOfView, ItemKind::Setting},
+    ItemDef{ItemId::ModernCamera, ItemKind::Setting},
+    ItemDef{ItemId::LookBack, ItemKind::Setting},
+    ItemDef{ItemId::CrtFilter, ItemKind::Setting},
+    ItemDef{ItemId::CrtImage, ItemKind::Setting},
+    ItemDef{ItemId::CrtScaling, ItemKind::Setting},
+    ItemDef{ItemId::CrtStrength, ItemKind::Setting},
+};
+
+constexpr std::array kSceneryItems{
+    ItemDef{ItemId::MaximumDetail, ItemKind::Setting},
+    ItemDef{ItemId::KeepHubScenery, ItemKind::Setting},
+    ItemDef{ItemId::KeepTrackScenery, ItemKind::Setting},
+    ItemDef{ItemId::KeepMinigameScenery, ItemKind::Setting},
+    ItemDef{ItemId::ReducePopIn, ItemKind::Setting},
+    ItemDef{ItemId::VisibilityMargin, ItemKind::Setting},
+    ItemDef{ItemId::ViewDistance, ItemKind::Setting},
+    ItemDef{ItemId::SceneryCoverage, ItemKind::Setting},
+    ItemDef{ItemId::AnimatedDistance, ItemKind::Setting},
+    ItemDef{ItemId::EffectsDistance, ItemKind::Setting},
+    ItemDef{ItemId::WaterLavaDistance, ItemKind::Setting},
+};
+
+constexpr std::array kWaterAndLavaItems{
+    ItemDef{ItemId::WaterPreset, ItemKind::Setting},
+    ItemDef{ItemId::Reflections, ItemKind::Setting},
+    ItemDef{ItemId::RacerWakes, ItemKind::Setting},
+    ItemDef{ItemId::WaterSpray, ItemKind::Setting},
+    ItemDef{ItemId::LavaGlow, ItemKind::Setting},
+    ItemDef{ItemId::LavaIntensity, ItemKind::Setting},
+    ItemDef{ItemId::LavaRange, ItemKind::Setting},
+    ItemDef{ItemId::LavaBrightness, ItemKind::Setting},
+    ItemDef{ItemId::LavaPulseStrength, ItemKind::Setting},
+    ItemDef{ItemId::LavaPulseSpeed, ItemKind::Setting},
+    ItemDef{ItemId::AdvancedWater, ItemKind::Page, PageId::AdvancedWater},
+};
+
+constexpr std::array kAdvancedWaterItems{
+    ItemDef{ItemId::ReflectionDetail, ItemKind::Setting},
+    ItemDef{ItemId::WakeDetail, ItemKind::Setting},
+    ItemDef{ItemId::SprayDetail, ItemKind::Setting},
+    ItemDef{ItemId::ReflectionDistance, ItemKind::Setting},
+    ItemDef{ItemId::ReflectionStrength, ItemKind::Setting},
+    ItemDef{ItemId::SurfaceRoughness, ItemKind::Setting},
+    ItemDef{ItemId::RippleStrength, ItemKind::Setting},
+    ItemDef{ItemId::FoamIntensity, ItemKind::Setting},
+    ItemDef{ItemId::WakeVisibility, ItemKind::Setting},
+    ItemDef{ItemId::WaterClarity, ItemKind::Setting},
+    ItemDef{ItemId::RefractionStrength, ItemKind::Setting},
+    ItemDef{ItemId::WaterfallDetail, ItemKind::Setting},
+    ItemDef{ItemId::TrackColours, ItemKind::Setting},
+    ItemDef{ItemId::TintRed, ItemKind::Setting},
+    ItemDef{ItemId::TintGreen, ItemKind::Setting},
+    ItemDef{ItemId::TintBlue, ItemKind::Setting},
+    ItemDef{ItemId::ResetWaterAppearance, ItemKind::Action},
+    ItemDef{ItemId::ResetWaterQuality, ItemKind::Action},
+    ItemDef{ItemId::RecordWaterPerformance, ItemKind::Setting},
+};
+
+constexpr std::array kPerformanceOverlayItems{
+    ItemDef{ItemId::OverlayShow, ItemKind::Setting},
+    ItemDef{ItemId::OverlayPosition, ItemKind::Setting},
+    ItemDef{ItemId::OverlayDetail, ItemKind::Setting},
+    ItemDef{ItemId::OverlayLayout, ItemKind::Setting},
+    ItemDef{ItemId::OverlayFontSize, ItemKind::Setting},
+    ItemDef{ItemId::OverlayFillColour, ItemKind::Setting},
+    ItemDef{ItemId::OverlayOutlineColour, ItemKind::Setting},
+    ItemDef{ItemId::MetricFrameTime, ItemKind::Setting},
+    ItemDef{ItemId::MetricSimulation, ItemKind::Setting},
+    ItemDef{ItemId::MetricGraphics, ItemKind::Setting},
+    ItemDef{ItemId::MetricVi, ItemKind::Setting},
+    ItemDef{ItemId::MetricInterpolation, ItemKind::Setting},
+    ItemDef{ItemId::MetricAudio, ItemKind::Setting},
+    ItemDef{ItemId::MetricTarget, ItemKind::Setting},
+    ItemDef{ItemId::MetricResolution, ItemKind::Setting},
 };
 
 // Volume sliders first, then the other sound settings.
@@ -41,6 +144,13 @@ constexpr std::array kAudioItems{
 constexpr std::array kPages{
     PageDef{PageId::Root, kRootItems},
     PageDef{PageId::General, kGeneralItems},
+    PageDef{PageId::Display, kDisplayItems},
+    PageDef{PageId::AdvancedGraphics, kAdvancedGraphicsItems},
+    PageDef{PageId::HudAndCamera, kHudAndCameraItems},
+    PageDef{PageId::Scenery, kSceneryItems},
+    PageDef{PageId::WaterAndLava, kWaterAndLavaItems},
+    PageDef{PageId::AdvancedWater, kAdvancedWaterItems},
+    PageDef{PageId::PerformanceOverlay, kPerformanceOverlayItems},
     PageDef{PageId::Audio, kAudioItems},
 };
 
@@ -154,6 +264,10 @@ Result Controller::handle(Input input, Settings& settings) {
             } else if (item.kind == ItemKind::Return) {
                 result.sound = Sound::Back;
                 result.leave = item.id;
+            } else if (const std::optional<std::string> done = settings.activate(item.id)) {
+                result.sound = Sound::Select;
+                result.changed = true;
+                if (!done->empty()) result.speech = {{*done, true}};
             }
             break;
         case Input::Back:

@@ -24,6 +24,7 @@ public:
     std::string label(ItemId id) const override;
     std::string value(ItemId id) const override;
     bool adjust(ItemId id, int step) override;
+    std::optional<std::string> activate(ItemId id) override;
 
 private:
     std::uint32_t game_volume(runtime::RecompiledEntrypoint getter) const;

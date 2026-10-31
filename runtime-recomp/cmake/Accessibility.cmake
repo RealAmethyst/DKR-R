@@ -11,6 +11,7 @@ set(DKR_PRISM_SOURCE "${DKR_DEPENDENCIES_DIR}/prism")
 
 # Game-independent parts: speech, wording and text preparation.
 add_library(DKRAccessibility STATIC
+    src/game/accessibility/display_text.cpp
     src/game/accessibility/guest_text.cpp
     src/game/accessibility/localization.cpp
     src/game/accessibility/speech.cpp
@@ -105,4 +106,13 @@ if(BUILD_TESTING)
         "${CMAKE_CURRENT_LIST_DIR}/../src/game")
     target_compile_features(DKROptionsMenuTests PRIVATE cxx_std_20)
     add_test(NAME DKROptionsMenu COMMAND DKROptionsMenuTests)
+
+    add_executable(DKROptionsMenuDisplayTextTests
+        tests/options_menu_display_text_tests.cpp
+        src/game/accessibility/display_text.cpp
+    )
+    target_include_directories(DKROptionsMenuDisplayTextTests PRIVATE
+        "${CMAKE_CURRENT_LIST_DIR}/../src/game")
+    target_compile_features(DKROptionsMenuDisplayTextTests PRIVATE cxx_std_20)
+    add_test(NAME DKROptionsMenuDisplayText COMMAND DKROptionsMenuDisplayTextTests)
 endif()

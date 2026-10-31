@@ -1,9 +1,11 @@
 #include "game_settings.hpp"
 
 #include "accessibility/symbol_lookup.hpp"
+#include "accessibility/display_text.hpp"
 #include "accessibility/game_text.hpp"
 #include "accessibility/guest_text.hpp"
 #include "accessibility/localization.hpp"
+#include "display_bridge.hpp"
 #include "game_audio_memory.hpp"
 #include "runtime_enhancements.hpp"
 #include "runtime_platform.hpp"
@@ -106,6 +108,7 @@ GameSettings::GameSettings(std::uint8_t* rdram, GuestCalls& calls, const GameCal
     : rdram_(rdram), calls_(calls), game_(game), output_devices_(output_devices) {}
 
 bool GameSettings::visible(ItemId id) const {
+    if (runtime::ui::display::handles(id)) return runtime::ui::display::visible(id);
     switch (id) {
         case ItemId::VehiclesVolume:
         case ItemId::NatureVolume:
@@ -126,18 +129,18 @@ std::string GameSettings::heading(PageId page) const {
         case PageId::Root: return game_text(rdram_, kOptions);
         case PageId::General: return text::phrase(Phrase::GeneralOptions);
         case PageId::Audio: return game_text(rdram_, kAudioOptions);
+        default: return text::display_heading(page);
     }
-    return {};
 }
 
 std::string GameSettings::label(ItemId id) const {
+    if (id == ItemId::DisplayOptions || runtime::ui::display::handles(id)) return text::display_label(id);
     switch (id) {
         case ItemId::GeneralOptions: return text::phrase(Phrase::GeneralOptions);
         case ItemId::AudioOptions: return game_text(rdram_, kAudioOptions);
         case ItemId::SaveOptions: return game_text(rdram_, kSaveOptions);
         case ItemId::MagicCodes: return game_text(rdram_, kMagicCodes);
         case ItemId::Return: return game_text(rdram_, kReturn);
-        case ItemId::Presentation: return text::phrase(Phrase::Presentation);
         case ItemId::MasterVolume: return text::phrase(Phrase::MasterVolume);
         case ItemId::MusicVolume: return game_text(rdram_, kMusicVolume);
         case ItemId::SfxVolume: return game_text(rdram_, kSfxVolume);
@@ -159,6 +162,7 @@ std::string GameSettings::label(ItemId id) const {
 }
 
 std::string GameSettings::value(ItemId id) const {
+    if (runtime::ui::display::handles(id)) return runtime::ui::display::value(id);
     if (const auto channel = channel_of(id)) {
         return text::percent(static_cast<int>(std::lround(runtime::ui::sound_level(*channel) * 100.0F)));
     }
@@ -170,9 +174,6 @@ std::string GameSettings::value(ItemId id) const {
             return game_text(rdram_, kLanguage);
         case ItemId::Subtitles:
             return game_text(rdram_, subtitles_on() ? kSubtitlesOn : kSubtitlesOff);
-        case ItemId::Presentation:
-            return text::phrase(enh::presentation_profile() == enh::PresentationProfile::Modern ? Phrase::Modern
-                                                                                                  : Phrase::Accurate);
         case ItemId::MusicVolume:
             return text::percent(percent_of(game_volume(game_.music_volume_config)));
         case ItemId::SfxVolume:
@@ -202,6 +203,7 @@ std::string GameSettings::value(ItemId id) const {
 }
 
 bool GameSettings::adjust(ItemId id, int step) {
+    if (runtime::ui::display::handles(id)) return runtime::ui::display::adjust(id, step);
     if (const auto channel = channel_of(id)) {
         const int level = static_cast<int>(std::lround(runtime::ui::sound_level(*channel) * 100.0F));
         const int next = std::clamp(level + step * kVolumeStep, 0, 100);
@@ -229,11 +231,6 @@ bool GameSettings::adjust(ItemId id, int step) {
             calls_.call(game_.set_subtitles, {on ? 0U : 1U});
             return true;
         }
-        case ItemId::Presentation:
-            runtime::ui::set_presentation_profile(enh::presentation_profile() == enh::PresentationProfile::Modern
-                                                      ? enh::PresentationProfile::Accurate
-                                                      : enh::PresentationProfile::Modern);
-            return true;
         case ItemId::MusicVolume:
         case ItemId::SfxVolume: {
             const bool music = id == ItemId::MusicVolume;
@@ -289,6 +286,11 @@ bool GameSettings::adjust(ItemId id, int step) {
         default:
             return false;
     }
+}
+
+std::optional<std::string> GameSettings::activate(ItemId id) {
+    if (runtime::ui::display::handles(id)) return runtime::ui::display::activate(id);
+    return std::nullopt;
 }
 
 std::uint32_t GameSettings::game_volume(runtime::RecompiledEntrypoint getter) const {

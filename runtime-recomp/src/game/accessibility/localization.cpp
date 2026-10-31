@@ -13,9 +13,6 @@ std::string item(std::string_view name, std::size_t index, std::size_t total) {
 std::string phrase(Phrase phrase) {
     switch (phrase) {
         case Phrase::GeneralOptions: return "GENERAL OPTIONS";
-        case Phrase::Presentation: return "PRESENTATION";
-        case Phrase::Accurate: return "ACCURATE";
-        case Phrase::Modern: return "MODERN";
         case Phrase::MasterVolume: return "MASTER VOLUME";
         case Phrase::VehiclesVolume: return "VEHICLES VOLUME";
         case Phrase::NatureVolume: return "NATURE VOLUME";

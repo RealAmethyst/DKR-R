@@ -13,11 +13,23 @@
 // moved between pages without touching the controller.
 namespace dkr::options_menu {
 
-enum class PageId { Root, General, Audio };
+enum class PageId {
+    Root,
+    General,
+    Display,
+    AdvancedGraphics,
+    HudAndCamera,
+    Scenery,
+    WaterAndLava,
+    AdvancedWater,
+    PerformanceOverlay,
+    Audio,
+};
 
 enum class ItemId {
     // Root
     GeneralOptions,
+    DisplayOptions,
     AudioOptions,
     SaveOptions,
     MagicCodes,
@@ -25,7 +37,95 @@ enum class ItemId {
     // General
     Language,
     Subtitles,
+    // Display (DKR-R's graphics settings; display_bridge.inl)
     Presentation,
+    WindowMode,
+    PerformancePreset,
+    Resolution,
+    AspectRatio,
+    FrameRate,
+    AdvancedGraphics,
+    HudAndCamera,
+    Scenery,
+    WaterAndLava,
+    PerformanceOverlay,
+    // Advanced graphics
+    GraphicsApi,
+    AntiAliasing,
+    Anisotropy,
+    ColourPrecision,
+    Supersampling,
+    TextureSharpness,
+    TextureShimmering,
+    // HUD and camera
+    HudLayout,
+    FieldOfView,
+    ModernCamera,
+    LookBack,
+    CrtFilter,
+    CrtImage,
+    CrtScaling,
+    CrtStrength,
+    // Scenery
+    MaximumDetail,
+    KeepHubScenery,
+    KeepTrackScenery,
+    KeepMinigameScenery,
+    ReducePopIn,
+    VisibilityMargin,
+    ViewDistance,
+    SceneryCoverage,
+    AnimatedDistance,
+    EffectsDistance,
+    WaterLavaDistance,
+    // Water and lava
+    WaterPreset,
+    Reflections,
+    RacerWakes,
+    WaterSpray,
+    LavaGlow,
+    LavaIntensity,
+    LavaRange,
+    LavaBrightness,
+    LavaPulseStrength,
+    LavaPulseSpeed,
+    AdvancedWater,
+    // Advanced water
+    ReflectionDetail,
+    WakeDetail,
+    SprayDetail,
+    ReflectionDistance,
+    ReflectionStrength,
+    SurfaceRoughness,
+    RippleStrength,
+    FoamIntensity,
+    WakeVisibility,
+    WaterClarity,
+    RefractionStrength,
+    WaterfallDetail,
+    TrackColours,
+    TintRed,
+    TintGreen,
+    TintBlue,
+    ResetWaterAppearance,
+    ResetWaterQuality,
+    RecordWaterPerformance,
+    // Performance overlay
+    OverlayShow,
+    OverlayPosition,
+    OverlayDetail,
+    OverlayLayout,
+    OverlayFontSize,
+    OverlayFillColour,
+    OverlayOutlineColour,
+    MetricFrameTime,
+    MetricSimulation,
+    MetricGraphics,
+    MetricVi,
+    MetricInterpolation,
+    MetricAudio,
+    MetricTarget,
+    MetricResolution,
     // Audio
     MasterVolume,
     MusicVolume,
@@ -45,7 +145,8 @@ enum class ItemKind {
     Page,    // opens another page of this menu
     Screen,  // leaves for one of the game's own screens
     Return,  // leaves the menu
-    Setting, // left/right changes its value
+    Setting, // left/right changes its value; some also act on A
+    Action,  // A does something (a reset)
 };
 
 struct ItemDef {
@@ -73,6 +174,9 @@ public:
     virtual std::string value(ItemId) const { return {}; }
     // One step left (-1) or right (+1); true when the value changed.
     virtual bool adjust(ItemId, int) { return false; }
+    // A on a Setting or Action. Returns what to say when it did something
+    // (a preset applied, a reset done); nullopt when A does nothing here.
+    virtual std::optional<std::string> activate(ItemId) { return std::nullopt; }
 };
 
 enum class Input { Up, Down, Left, Right, Accept, Back };

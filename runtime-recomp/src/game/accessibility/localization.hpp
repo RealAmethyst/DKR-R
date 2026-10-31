@@ -19,9 +19,6 @@ std::string item(std::string_view name, std::size_t index, std::size_t total);
 // capitals like the game's menu text. Game settings use the game's text.
 enum class Phrase {
     GeneralOptions,
-    Presentation,
-    Accurate,
-    Modern,
     MasterVolume,
     VehiclesVolume,
     NatureVolume,
