@@ -115,4 +115,14 @@ if(BUILD_TESTING)
         "${CMAKE_CURRENT_LIST_DIR}/../src/game")
     target_compile_features(DKROptionsMenuDisplayTextTests PRIVATE cxx_std_20)
     add_test(NAME DKROptionsMenuDisplayText COMMAND DKROptionsMenuDisplayTextTests)
+
+    # The tests check with assert(), which release configurations compile out.
+    foreach(accessibility_test IN ITEMS DKRAccessibilitySpeechServiceTests DKRAccessibilityMenuSpeechTests
+                                        DKROptionsMenuTests DKROptionsMenuDisplayTextTests)
+        if(MSVC)
+            target_compile_options(${accessibility_test} PRIVATE /UNDEBUG)
+        else()
+            target_compile_options(${accessibility_test} PRIVATE -UNDEBUG)
+        endif()
+    endforeach()
 endif()
