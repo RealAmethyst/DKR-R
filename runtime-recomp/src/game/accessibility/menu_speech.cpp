@@ -1,13 +1,16 @@
-// Speech for the boot, title and Options screens, driven by the hooks that
+// Speech for the stock menus, driven by the hooks that
 // scripts/accessibility_menu_policy.py composes into the recompiled game. The
 // handler runs on the game thread at the hooked instruction, reads only the
-// state the screen itself just drew or changed, and queues speech.
-#include "symbol_lookup.hpp"
+// state the screen itself just drew or changed, and queues speech. The
+// redesigned Options menu speaks for itself (options_menu/).
+#include "game_text.hpp"
 #include "guest_text.hpp"
 #include "menu_events.hpp"
 #include "menu_speech_policy.hpp"
+#include "options_menu/options_screen.hpp"
 #include "runtime_netplay.hpp"
 #include "speech.hpp"
+#include "symbol_lookup.hpp"
 
 #include "recomp.h"
 
@@ -16,21 +19,8 @@
 namespace dkr::accessibility {
 namespace {
 
-// Speech prepared from a guest string pointer, or empty when the pointer or
-// text cannot be verified.
-std::string spoken_text(std::uint8_t* rdram, std::uint32_t pointer) {
-    if (pointer == 0U) {
-        return {};
-    }
-    const std::optional<std::string> raw = guest_string(rdram, pointer);
-    if (!raw) {
-        return {};
-    }
-    return prepare_game_text(*raw).value_or(std::string{});
-}
-
-// A NULL-terminated array of string pointers (gTitleMenuStrings,
-// gOptionMenuStrings), with its cursor variable.
+// A NULL-terminated array of string pointers (gTitleMenuStrings), with its
+// cursor variable.
 std::optional<MenuList> read_list(std::uint8_t* rdram, const char* strings, const char* cursor) {
     const std::optional<std::uint32_t> array = symbols::data(strings, 8U);
     const std::optional<std::uint32_t> index = symbols::data(cursor, 4U);
@@ -43,7 +33,7 @@ std::optional<MenuList> read_list(std::uint8_t* rdram, const char* strings, cons
         return std::nullopt;
     }
     MenuList list;
-    // Both arrays reserve a terminating NULL slot; read at most 16 entries.
+    // The arrays reserve a terminating NULL slot; read at most 16 entries.
     for (std::uint32_t slot = 0; slot < 16U; ++slot) {
         const std::optional<std::uint32_t> pointer = guest_word(rdram, *array + slot * 4U);
         if (!pointer) {
@@ -52,35 +42,13 @@ std::optional<MenuList> read_list(std::uint8_t* rdram, const char* strings, cons
         if (*pointer == 0U) {
             break;
         }
-        list.items.push_back(spoken_text(rdram, *pointer));
+        list.items.push_back(pointed_text(rdram, *pointer).value_or(std::string{}));
     }
     if (list.items.empty() || *selected >= list.items.size()) {
         return std::nullopt;
     }
     list.selected = *selected;
     return list;
-}
-
-// One entry of the language-dependent menu text table (gMenuText).
-std::optional<std::string> menu_text(std::uint8_t* rdram, MenuText entry) {
-    const std::optional<std::uint32_t> table_symbol = symbols::data("gMenuText", 4U);
-    if (!table_symbol) {
-        return std::nullopt;
-    }
-    const std::optional<std::uint32_t> table = guest_word(rdram, *table_symbol);
-    if (!table) {
-        return std::nullopt;
-    }
-    const std::optional<std::uint32_t> pointer =
-        guest_word(rdram, *table + static_cast<std::uint32_t>(entry) * 4U);
-    if (!pointer) {
-        return std::nullopt;
-    }
-    std::string text = spoken_text(rdram, *pointer);
-    if (text.empty()) {
-        return std::nullopt;
-    }
-    return text;
 }
 
 MenuNarrator& narrator() {
@@ -109,13 +77,7 @@ extern "C" void dkr_accessibility_menu_event(std::uint8_t* rdram, recomp_context
             if (!id) {
                 return;
             }
-            const auto menu = static_cast<MenuId>(static_cast<std::int32_t>(*id));
-            if (menu == MenuId::Options) {
-                speak(narrator().screen_opened(menu, menu_text(rdram, MenuText::OptionsHeading),
-                                               read_list(rdram, "gOptionMenuStrings", "gMenuCurIndex")));
-            } else {
-                speak(narrator().screen_opened(menu, std::nullopt, std::nullopt));
-            }
+            dkr::options_menu::screen_opened(rdram, *ctx, static_cast<std::int32_t>(*id));
             return;
         }
         case MenuEvent::TitleRevealed:
@@ -125,13 +87,6 @@ extern "C" void dkr_accessibility_menu_event(std::uint8_t* rdram, recomp_context
             return;
         case MenuEvent::TitleCursor:
             if (const auto list = read_list(rdram, "gTitleMenuStrings", "gTitleScreenCurrentOption")) {
-                speak(narrator().item_changed(*list));
-            }
-            return;
-        case MenuEvent::OptionsCursor:
-        case MenuEvent::OptionsLanguage:
-        case MenuEvent::OptionsSubtitles:
-            if (const auto list = read_list(rdram, "gOptionMenuStrings", "gMenuCurIndex")) {
                 speak(narrator().item_changed(*list));
             }
             return;

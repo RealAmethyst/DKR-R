@@ -1,4 +1,5 @@
-# Screen reader accessibility layer (src/game/accessibility).
+# Screen reader accessibility layer (src/game/accessibility) and the
+# redesigned in-game Options menu (src/game/options_menu).
 #
 # Speech goes through Prism, built as a shared library: a static Prism forces
 # its bundled fmt into the link, which clashes with N64Recomp's fmt. Prism's
@@ -10,6 +11,7 @@ set(DKR_PRISM_SOURCE "${DKR_DEPENDENCIES_DIR}/prism")
 
 # Game-independent parts: speech, wording and text preparation.
 add_library(DKRAccessibility STATIC
+    src/game/accessibility/display_text.cpp
     src/game/accessibility/guest_text.cpp
     src/game/accessibility/localization.cpp
     src/game/accessibility/speech.cpp
@@ -24,10 +26,20 @@ target_link_libraries(DKRAccessibility PUBLIC Threads::Threads)
 # executable itself: as an archive they would precede the generated payloads
 # that reference them in GNU ld's left-to-right scan.
 set(DKR_ACCESSIBILITY_GAME_SOURCES
-    src/game/accessibility/symbol_lookup.cpp
+    src/game/accessibility/game_text.cpp
     src/game/accessibility/guest_memory.cpp
     src/game/accessibility/menu_speech.cpp
+    src/game/accessibility/symbol_lookup.cpp
+    src/game/options_menu/game_audio_memory.cpp
+    src/game/options_menu/game_settings.cpp
+    src/game/options_menu/guest_calls.cpp
+    src/game/options_menu/options_menu.cpp
+    src/game/options_menu/options_screen.cpp
 )
+# The Options menu's bindings to each revision's recompiled functions are
+# compiled with that revision's payload (funcs.h, Rev A symbol map).
+set(DKR_OPTIONS_MENU_CALLS_V77 src/game/options_menu/game_calls_v77.cpp)
+set(DKR_OPTIONS_MENU_CALLS_V80 src/game/options_menu/game_calls_v80.cpp)
 
 function(dkr_add_prism)
     set(BUILD_SHARED_LIBS ON)
@@ -84,4 +96,23 @@ if(BUILD_TESTING)
         "${CMAKE_CURRENT_LIST_DIR}/../src/game")
     target_compile_features(DKRAccessibilityMenuSpeechTests PRIVATE cxx_std_20)
     add_test(NAME DKRAccessibilityMenuSpeech COMMAND DKRAccessibilityMenuSpeechTests)
+
+    add_executable(DKROptionsMenuTests
+        tests/options_menu_tests.cpp
+        src/game/options_menu/options_menu.cpp
+        src/game/accessibility/localization.cpp
+    )
+    target_include_directories(DKROptionsMenuTests PRIVATE
+        "${CMAKE_CURRENT_LIST_DIR}/../src/game")
+    target_compile_features(DKROptionsMenuTests PRIVATE cxx_std_20)
+    add_test(NAME DKROptionsMenu COMMAND DKROptionsMenuTests)
+
+    add_executable(DKROptionsMenuDisplayTextTests
+        tests/options_menu_display_text_tests.cpp
+        src/game/accessibility/display_text.cpp
+    )
+    target_include_directories(DKROptionsMenuDisplayTextTests PRIVATE
+        "${CMAKE_CURRENT_LIST_DIR}/../src/game")
+    target_compile_features(DKROptionsMenuDisplayTextTests PRIVATE cxx_std_20)
+    add_test(NAME DKROptionsMenuDisplayText COMMAND DKROptionsMenuDisplayTextTests)
 endif()

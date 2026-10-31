@@ -766,6 +766,8 @@ if(DKR_RUNTIME_BUILD_GENERATED)
         DKRRecompiledFuncsV80 80 "${DKR_GENERATED_SOURCE_V80}"
         "${CMAKE_CURRENT_LIST_DIR}/src/game/game_payload_v80.cpp"
         "${DKR_V80_SYMBOL_MAP}")
+    target_sources(DKRRecompiledFuncsV77 PRIVATE ${DKR_OPTIONS_MENU_CALLS_V77})
+    target_sources(DKRRecompiledFuncsV80 PRIVATE ${DKR_OPTIONS_MENU_CALLS_V80})
 endif()
 
 if(DKR_RUNTIME_BUILD_GENERATED)
@@ -1450,6 +1452,8 @@ if(BUILD_TESTING)
             COMMAND "${Python3_EXECUTABLE}" -B "${CMAKE_CURRENT_LIST_DIR}/tests/test_startup_flow_pipeline.py")
         add_test(NAME DKRAccessibilityMenuPipeline
             COMMAND "${Python3_EXECUTABLE}" -B "${CMAKE_CURRENT_LIST_DIR}/tests/test_accessibility_menu_pipeline.py")
+        add_test(NAME DKROptionsMenuPipeline
+            COMMAND "${Python3_EXECUTABLE}" -B "${CMAKE_CURRENT_LIST_DIR}/tests/test_options_menu_pipeline.py")
         add_test(NAME DKRTrackSelectDrawPipeline
             COMMAND "${Python3_EXECUTABLE}" -B "${CMAKE_CURRENT_LIST_DIR}/tests/test_track_select_draw_pipeline.py")
     endif()

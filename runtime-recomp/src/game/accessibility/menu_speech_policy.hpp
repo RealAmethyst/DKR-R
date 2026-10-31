@@ -24,33 +24,12 @@ struct MenuList {
     std::size_t selected = 0;
 };
 
-// What the boot, title and Options screens say, following the project's
-// speech rules: a displayed heading interrupts once per screen opening and
-// its selected item is queued after it; with no heading the item interrupts;
-// moving or changing an item speaks that item alone; items carry their
-// position from the actual list. Returning to Options from one of its own
-// sub-screens speaks the current item without the heading again.
+// What the stock screens say, following the project's speech rules: with no
+// displayed heading the selected item interrupts; moving an item speaks that
+// item alone; items carry their position from the actual list. The title
+// menu appears on reveal. The redesigned Options menu speaks for itself.
 class MenuNarrator {
 public:
-    std::vector<Utterance> screen_opened(MenuId id, const std::optional<std::string>& heading,
-                                         const std::optional<MenuList>& list) {
-        const std::optional<MenuId> previous = current_;
-        current_ = id;
-        if (id != MenuId::Options || !list) {
-            return {};
-        }
-        const bool from_sub_screen = previous == MenuId::AudioOptions || previous == MenuId::SaveOptions ||
-                                     previous == MenuId::MagicCodes || previous == MenuId::MagicCodesList;
-        if (from_sub_screen || !heading) {
-            return selected(*list, true);
-        }
-        std::vector<Utterance> result{{*heading, true}};
-        for (Utterance& item : selected(*list, false)) {
-            result.push_back(std::move(item));
-        }
-        return result;
-    }
-
     // The title menu has no displayed heading; it appears on reveal.
     std::vector<Utterance> title_revealed(const MenuList& list) { return selected(list, true); }
 
@@ -63,8 +42,6 @@ private:
         }
         return {{text::item(list.items[list.selected], list.selected + 1U, list.items.size()), interrupt}};
     }
-
-    std::optional<MenuId> current_;
 };
 
 } // namespace dkr::accessibility

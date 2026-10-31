@@ -1,4 +1,5 @@
 #include "runtime_ui.hpp"
+#include "options_menu/game_audio_memory.hpp"
 #include "launcher_copy_policy.hpp"
 #include "lobby_privacy_policy.hpp"
 #include "online_view_policy.hpp"
@@ -1717,6 +1718,7 @@ void SaveSettings() {
         output << "sound_muted=" << sound_muted << '\n';
         output << "audio_output_device="
                << dkr::runtime::platform::audio_output_device() << '\n';
+        dkr::options_menu::write_game_audio_settings(output);
         if (g_eq_custom) {
             output << "eq_custom=" << (*g_eq_custom)[0] << ',' << (*g_eq_custom)[1]
                    << ',' << (*g_eq_custom)[2] << '\n';
@@ -2131,6 +2133,9 @@ void LoadSettings() {
         }
         if (key == "audio_output_device") {
             dkr::runtime::platform::set_audio_output_device(value);
+            continue;
+        }
+        if (dkr::options_menu::load_game_audio_setting(key, value)) {
             continue;
         }
         // Outside the chain below, which is already at MSVC's nesting limit.
@@ -8448,6 +8453,9 @@ void dkr::runtime::ui::configure(const std::filesystem::path& config_directory) 
 void dkr::runtime::ui::persist_settings() {
     SaveSettings();
 }
+
+#include "options_menu/runtime_bridge.inl"
+#include "options_menu/display_bridge.inl"
 
 void dkr::runtime::ui::persist_graphics_api_fallback() {
     GraphicsConfig config = ultramodern::renderer::get_graphics_config();
