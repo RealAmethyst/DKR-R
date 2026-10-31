@@ -66,4 +66,16 @@ std::optional<std::uint32_t> GuestCalls::text(std::string_view value) {
     return address;
 }
 
+std::optional<std::uint32_t> GuestCalls::scratch(std::uint32_t bytes) {
+    if (!valid_ || bytes > kScratchBytes) {
+        return std::nullopt;
+    }
+    std::uint8_t* rdram = rdram_;
+    const std::uint32_t address = frame_ + kScratchOffset;
+    for (std::uint32_t i = 0; i < bytes; ++i) {
+        MEM_B(static_cast<std::int32_t>(i), guest_register(address)) = 0;
+    }
+    return address;
+}
+
 } // namespace dkr::options_menu

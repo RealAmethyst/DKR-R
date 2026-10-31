@@ -27,6 +27,10 @@ public:
     // ASCII, anything else as '?'. Returns the guest address.
     std::optional<std::uint32_t> text(std::string_view value);
 
+    // Zeroed scratch for a function to write into, in the same space as
+    // text(). Returns the guest address.
+    std::optional<std::uint32_t> scratch(std::uint32_t bytes);
+
 private:
     std::uint8_t* rdram_;
     recomp_context saved_;

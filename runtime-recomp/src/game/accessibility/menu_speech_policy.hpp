@@ -6,6 +6,7 @@
 #include <cstddef>
 #include <optional>
 #include <string>
+#include <utility>
 #include <vector>
 
 namespace dkr::accessibility {
@@ -24,14 +25,40 @@ struct MenuList {
     std::size_t selected = 0;
 };
 
-// What the stock screens say, following the project's speech rules: with no
-// displayed heading the selected item interrupts; moving an item speaks that
-// item alone; items carry their position from the actual list. The title
-// menu appears on reveal. The redesigned Options menu speaks for itself.
+// What the stock screens say, following the project's speech rules: a
+// displayed heading interrupts and the selected item queues after it; with no
+// heading the selected item interrupts; moving an item speaks that item alone;
+// items carry their position from the actual list. The title menu appears on
+// reveal. The redesigned Options menu speaks for itself.
 class MenuNarrator {
 public:
     // The title menu has no displayed heading; it appears on reveal.
     std::vector<Utterance> title_revealed(const MenuList& list) { return selected(list, true); }
+
+    // A screen with a displayed heading and a list, such as GAME SELECT. An
+    // unverified heading is left out; the item then interrupts.
+    std::vector<Utterance> opened(const std::string& heading, const MenuList& list) {
+        if (heading.empty()) {
+            return selected(list, true);
+        }
+        std::vector<Utterance> result{{heading, true}};
+        for (Utterance& item : selected(list, false)) {
+            result.push_back(std::move(item));
+        }
+        return result;
+    }
+
+    // A screen with a displayed heading and a message, such as CAUTION.
+    std::vector<Utterance> opened_message(const std::string& heading, std::optional<std::string> body) {
+        std::vector<Utterance> result;
+        if (!heading.empty()) {
+            result.push_back({heading, true});
+        }
+        if (body && !body->empty()) {
+            result.push_back({std::move(*body), result.empty()});
+        }
+        return result;
+    }
 
     std::vector<Utterance> item_changed(const MenuList& list) { return selected(list, true); }
 

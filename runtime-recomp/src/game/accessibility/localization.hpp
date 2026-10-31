@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstddef>
+#include <cstdint>
 #include <string>
 #include <string_view>
 
@@ -33,8 +34,25 @@ enum class Phrase {
     Bass,
     Mid,
     Treble,
+    Ready,
 };
 std::string phrase(Phrase phrase);
+
+// A character by the game's Character id (include/enums.h); the character
+// select screen shows them only as models. Empty for an unknown id.
+std::string character_name(std::uint32_t character);
+
+// A player by controller number, counted from 1: "PLAYER 2".
+std::string player(std::size_t number);
+// "PLAYER 2 LEFT".
+std::string player_left(std::size_t number);
+
+// A record time: "1 MINUTE 2.35 SECONDS", "2 MINUTES 0.05 SECONDS", or
+// "20.11 SECONDS" under a minute.
+std::string record_time(int minutes, int seconds, int hundredths);
+
+// A save's balloon count: "1 BALLOON", "12 BALLOONS".
+std::string balloons(int count);
 
 // A volume level: "80%".
 std::string percent(int value);

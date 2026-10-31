@@ -2,8 +2,9 @@
 
 #include "game_payload.hpp"
 
-// The game's own functions used by the redesigned Options menu, bound by name
-// to each revision's recompiled code (game_calls_v77.cpp, game_calls_v80.cpp).
+// The game's own functions used by the redesigned Options menu and by menu
+// speech, bound by name to each revision's recompiled code
+// (game_calls_v77.cpp, game_calls_v80.cpp).
 namespace dkr::options_menu {
 
 struct GameCalls {
@@ -32,6 +33,11 @@ struct GameCalls {
     runtime::RecompiledEntrypoint music_volume_config_set;
     runtime::RecompiledEntrypoint sndp_get_global_volume;
     runtime::RecompiledEntrypoint sndp_set_global_volume;
+    // Text the stock menus draw, for speech.
+    runtime::RecompiledEntrypoint level_name;
+    runtime::RecompiledEntrypoint level_world_id;
+    runtime::RecompiledEntrypoint leveltable_vehicle_usable;
+    runtime::RecompiledEntrypoint filename_decompress;
 };
 
 const GameCalls& game_calls_v77();
