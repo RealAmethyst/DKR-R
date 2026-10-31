@@ -128,6 +128,14 @@
       "destination": "extern/rt64/src/contrib/nativefiledialog-extended",
       "managedBy": "rt64 git submodule",
       "purpose": "Native file dialog API with the project-owned iOS document picker"
+    },
+    {
+      "name": "prism",
+      "repository": "https://github.com/ethindp/prism.git",
+      "commit": "70731bcb9837c90ff84ce401f244c0c4a8c7134c",
+      "destination": "extern/prism",
+      "recursive": false,
+      "purpose": "MPL-2.0 screen reader speech output (Orca, NVDA, JAWS, VoiceOver) for accessibility"
     }
   ]
 }
