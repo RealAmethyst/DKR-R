@@ -15,6 +15,7 @@
 #include "runtime_netplay.hpp"
 #include "startup_performance.hpp"
 #include "runtime_telemetry.hpp"
+#include "spatial_audio/spatial_audio.hpp"
 #include "sdl3_input_client.hpp"
 #include "ultramodern/ultramodern.hpp"
 #include "virtual_pak_policy.hpp"
@@ -168,6 +169,8 @@ std::uint32_t g_audio_frequency = 0;
 std::vector<std::int16_t> g_audio_swap_buffer;
 // A custom track's music file, rendered per output block (custom_music).
 std::vector<float> g_custom_music_buffer;
+// Binaurally rendered positioned sounds, mixed with the game mix per block.
+std::vector<float> g_spatial_audio_buffer;
 dkr::runtime::audio::StereoEqualizer g_audio_equalizer;
 std::uint32_t g_audio_callback_frames = 0;
 bool g_audio_playback_started = false;
@@ -1514,6 +1517,7 @@ void dkr::runtime::platform::shutdown() {
         SDL_CloseAudioDevice(g_audio_device);
         g_audio_device = 0;
     }
+    dkr::runtime::spatial_audio::stop();
     if (g_ui_audio_device != 0) {
         SDL_ClearQueuedAudio(g_ui_audio_device);
         SDL_CloseAudioDevice(g_ui_audio_device);
@@ -2225,13 +2229,23 @@ void dkr::runtime::platform::queue_audio(std::int16_t* samples,
             dkr::runtime::custom_music::render(g_custom_music_buffer.data(),
                                                sample_count / 2U, g_audio_frequency);
         }
+        // Positioned sounds join the game mix before the equaliser and master
+        // volume, like the game's own sounds.
+        const bool spatial_audio_active = dkr::runtime::spatial_audio::active();
+        if (spatial_audio_active) {
+            g_spatial_audio_buffer.assign(sample_count, 0.0F);
+            dkr::runtime::spatial_audio::mix_into(g_spatial_audio_buffer.data(),
+                                                  sample_count / 2U);
+        }
         for (std::size_t i = 0; i < sample_count; i += 2) {
             // RDRAM's 32-bit word swap leaves each native stereo pair in R,L
             // order. Restore conventional L,R order before sending it to SDL.
             const float volume = g_master_volume.load(std::memory_order_relaxed);
             const auto filtered = g_audio_equalizer.process(
-                static_cast<float>(samples[i + 1]) + (custom_music_active ? g_custom_music_buffer[i] : 0.0F),
-                static_cast<float>(samples[i]) + (custom_music_active ? g_custom_music_buffer[i + 1] : 0.0F));
+                static_cast<float>(samples[i + 1]) + (custom_music_active ? g_custom_music_buffer[i] : 0.0F) +
+                    (spatial_audio_active ? g_spatial_audio_buffer[i] : 0.0F),
+                static_cast<float>(samples[i]) + (custom_music_active ? g_custom_music_buffer[i + 1] : 0.0F) +
+                    (spatial_audio_active ? g_spatial_audio_buffer[i + 1] : 0.0F));
             float ui_tone = 0.0F;
             if (g_ui_tone_frames_remaining != 0U &&
                 g_ui_tone_total_frames != 0U && g_audio_frequency != 0U) {
@@ -2420,6 +2434,7 @@ void ReopenGameAudioLocked(std::uint32_t frequency) {
         std::fprintf(stderr, "[boot][audio] open failed at %u Hz: %s\n",
                      frequency, SDL_GetError());
         g_audio_frequency = 0;
+        dkr::runtime::spatial_audio::stop();
         return;
     }
     g_audio_frequency = static_cast<std::uint32_t>(obtained.freq);
@@ -2431,6 +2446,7 @@ void ReopenGameAudioLocked(std::uint32_t frequency) {
     g_audio_equalizer.reset();
     std::fprintf(stderr, "[boot][audio] device opened requested=%u actual=%d format=%04X channels=%u\n",
                  frequency, obtained.freq, obtained.format, obtained.channels);
+    dkr::runtime::spatial_audio::start(g_audio_frequency);
 }
 } // namespace
 #endif
