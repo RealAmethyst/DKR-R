@@ -2335,6 +2335,14 @@ if(BUILD_TESTING)
     )
     add_test(NAME DKRAudioMixPolicy COMMAND DKRAudioMixPolicyTests)
 
+    add_executable(DKRAudioOutputPolicyTests
+        tests/audio_output_policy_tests.cpp
+    )
+    target_include_directories(DKRAudioOutputPolicyTests PRIVATE
+        "${CMAKE_CURRENT_LIST_DIR}/src/game"
+    )
+    add_test(NAME DKRAudioOutputPolicy COMMAND DKRAudioOutputPolicyTests)
+
     add_executable(DKRCustomMusicPolicyTests
         tests/custom_music_policy_tests.cpp
     )

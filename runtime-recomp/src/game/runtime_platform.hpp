@@ -44,6 +44,11 @@ void queue_audio(std::int16_t* samples, std::size_t sample_count);
 void request_ui_tone(float frequency_hz, std::uint32_t duration_ms);
 std::size_t audio_frames_remaining();
 void set_audio_frequency(std::uint32_t frequency);
+// Output devices by name; an empty name is the system default. Choosing a
+// device reopens open audio on it straight away.
+std::vector<std::string> audio_output_devices();
+std::string audio_output_device();
+void set_audio_output_device(std::string name);
 float master_volume();
 void set_master_volume(float volume);
 float bass_gain();

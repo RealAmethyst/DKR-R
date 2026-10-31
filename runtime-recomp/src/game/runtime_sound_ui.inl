@@ -464,6 +464,44 @@ void DrawSoundMultiplayerMusic(float width) {
     PaddockTextAt(front, tip, {a.x + 14.0F, a.y + 12.0F}, tip_width - 28.0F, kTip, style);
 }
 
+// The output device card. Devices are listed when the page opens and again
+// each time the picker opens, so a newly connected device appears. A saved
+// device that is not connected stays selected; the game plays on the system
+// default until it is back.
+void DrawSoundOutputCard(float width, bool entered) {
+    static std::vector<std::string> devices;
+    ImGui::PushID("output-device");
+    const bool picker_open = ImGui::IsPopupOpen("##choices");
+    ImGui::PopID();
+    static bool was_open = false;
+    if (entered || (picker_open && !was_open)) {
+        devices = dkr::runtime::platform::audio_output_devices();
+    }
+    was_open = picker_open;
+    DrawSoundCard(width, [&](float inner) {
+        DrawSoundCardHead("Output", "Choose where the game plays sound.", inner, 0.0F, [] {});
+        PaddockGap(4.0F + 10.0F);
+        const std::string saved = dkr::runtime::platform::audio_output_device();
+        std::vector<SettingsChoice> choices{{"System default", {}, false}};
+        std::vector<std::string> names{std::string{}};
+        int selected = 0;
+        for (const std::string& device : devices) {
+            if (device == saved) selected = static_cast<int>(choices.size());
+            choices.push_back({device, {}, false});
+            names.push_back(device);
+        }
+        if (!saved.empty() && selected == 0) {
+            selected = static_cast<int>(choices.size());
+            choices.push_back({saved, "Not connected", true});
+            names.push_back(saved);
+        }
+        if (SettingsDropdown("output-device", "Output device", &selected, choices, inner)) {
+            dkr::runtime::platform::set_audio_output_device(names[static_cast<std::size_t>(selected)]);
+            SaveSettings();
+        }
+    });
+}
+
 void DrawSoundPage(float available_width, bool live = false) {
     SoundPageState& state = g_sound_page;
     const int frame = ImGui::GetFrameCount();
@@ -497,6 +535,10 @@ void DrawSoundPage(float available_width, bool live = false) {
         DrawSoundMultiplayerMusic(width);
         PaddockGap(16.0F);
     }
+
+    // ------------------------------------------------------------ output
+    DrawSoundOutputCard(width, entered);
+    PaddockGap(16.0F);
 
     // ------------------------------------------------------------ volume
     DrawSoundCard(width, [&](float inner) {
