@@ -20,7 +20,12 @@ else()
     set(_dkr_steam_audio_default OFF)
 endif()
 option(DKR_STEAM_AUDIO "Binaural rendering of positioned sounds through Steam Audio" ${_dkr_steam_audio_default})
+# DKR-R's spatial audio module (src/game/spatial_audio). Without Steam Audio
+# it is a set of no-ops and the game keeps today's stereo mix.
 if(NOT DKR_STEAM_AUDIO)
+    add_library(DKRSpatialAudio STATIC src/game/spatial_audio/spatial_audio_disabled.cpp)
+    target_include_directories(DKRSpatialAudio PUBLIC "${CMAKE_CURRENT_LIST_DIR}/../src/game")
+    target_compile_features(DKRSpatialAudio PUBLIC cxx_std_20)
     return()
 endif()
 if(NOT _dkr_steam_audio_platform)
@@ -161,7 +166,22 @@ set_target_properties(DKRSteamAudio PROPERTIES
     INTERFACE_INCLUDE_DIRECTORIES "${_dkr_steam_audio_install}/include")
 add_dependencies(DKRSteamAudio dkr_steam_audio_phonon)
 
+add_library(DKRSpatialAudio STATIC
+    src/game/spatial_audio/binaural_renderer.cpp
+    src/game/spatial_audio/half_band_decimator.cpp
+    src/game/spatial_audio/spatial_audio.cpp
+    src/game/spatial_audio/test_tone.cpp
+)
+target_include_directories(DKRSpatialAudio PUBLIC "${CMAKE_CURRENT_LIST_DIR}/../src/game")
+target_compile_features(DKRSpatialAudio PUBLIC cxx_std_20)
+target_link_libraries(DKRSpatialAudio PUBLIC DKRSteamAudio)
+
 if(BUILD_TESTING)
+    add_executable(DKRSpatialAudioTests tests/spatial_audio_tests.cpp)
+    target_link_libraries(DKRSpatialAudioTests PRIVATE DKRSpatialAudio)
+    target_compile_options(DKRSpatialAudioTests PRIVATE -UNDEBUG)
+    add_test(NAME DKRSpatialAudio COMMAND DKRSpatialAudioTests)
+
     # Checks the built library itself: the default HRTF loads at the output
     # rate and the binaural effect places sound on the expected side.
     add_executable(DKRSteamAudioTests tests/steam_audio_tests.cpp)
