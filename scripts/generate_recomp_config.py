@@ -80,6 +80,9 @@ def main() -> int:
     from startup_flow_policy import compose_startup_flow
 
     policy = compose_startup_flow(policy, arguments.elf, revision)
+    from accessibility_menu_policy import compose_accessibility_menu
+
+    policy = compose_accessibility_menu(policy, arguments.elf, revision)
     if arguments.water_profile:
         from water_profile_policy import compose_water_profile
 

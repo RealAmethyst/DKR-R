@@ -354,6 +354,10 @@ install -m 0644 "${PROJECT_ROOT}/extern/libdatachannel/LICENSE" "${APPDIR}/usr/s
 install -m 0644 "${PROJECT_ROOT}/extern/mbedtls/LICENSE" "${APPDIR}/usr/share/doc/dkr-port/licenses/MBEDTLS-LICENSE.txt"
 install -m 0644 "${PROJECT_ROOT}/extern/libdatachannel/deps/libjuice/LICENSE" "${APPDIR}/usr/share/doc/dkr-port/licenses/LIBJUICE-LICENSE.txt"
 install -m 0644 "${PROJECT_ROOT}/extern/libdatachannel/deps/usrsctp/LICENSE.md" "${APPDIR}/usr/share/doc/dkr-port/licenses/USRSCTP-LICENSE.txt"
+# Screen reader speech: Prism, plus the notices of the libraries it incorporates.
+install -m 0644 "${PROJECT_ROOT}/extern/prism/LICENSE" "${APPDIR}/usr/share/doc/dkr-port/licenses/PRISM-LICENSE.txt"
+install -m 0644 "${PROJECT_ROOT}/extern/prism/NOTICE" "${APPDIR}/usr/share/doc/dkr-port/licenses/PRISM-NOTICE.txt"
+cp -R "${PROJECT_ROOT}/extern/prism/LICENSES" "${APPDIR}/usr/share/doc/dkr-port/licenses/PRISM-LICENSES"
 install -m 0644 "${PROJECT_ROOT}/extern/libdatachannel/deps/json/LICENSE.MIT" "${APPDIR}/usr/share/doc/dkr-port/licenses/NLOHMANN-JSON-LICENSE.txt"
 install -m 0644 "${PROJECT_ROOT}/extern/libdatachannel/deps/plog/LICENSE" "${APPDIR}/usr/share/doc/dkr-port/licenses/PLOG-LICENSE.txt"
 install -m 0644 "${PROJECT_ROOT}/packaging/linux/dkr-port.appdata.xml" "${APPDIR}/usr/share/metainfo/dkr-port.appdata.xml"

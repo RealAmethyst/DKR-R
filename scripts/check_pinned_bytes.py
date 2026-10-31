@@ -38,7 +38,8 @@ PATCH_MANIFEST = "patches/manifest.json"
 RECEIPTS = "modding/reference-us-v*/receipt.json"
 CAPSULE_MANIFESTS = "patches/release-prep/*/source-capsule-*/manifest.json"
 # Bases that main had already changed when the capsule was frozen, and bases
-# changed since by real code edits (the Sound page's output device).
+# changed since by real code edits (the Sound page's output device and the
+# accessibility layer).
 # patches/upstream-sync/restore_capsule.py reads these from the pinned commit
 # instead, so they are free to change; every other base must keep its bytes.
 DRIFTED_BASES = frozenset(

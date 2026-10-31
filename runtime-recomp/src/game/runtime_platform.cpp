@@ -1,4 +1,5 @@
 #include "runtime_platform.hpp"
+#include "accessibility/speech.hpp"
 #include "application_layout.hpp"
 #include "audio_equalizer.hpp"
 #include "audio_output_policy.hpp"
@@ -1493,10 +1494,12 @@ bool dkr::runtime::platform::initialise() {
     std::fprintf(stderr,
                  "[boot][input] keyboard: WASD=stick arrows=d-pad Space=A Shift=B "
                  "Z=Z Enter=Start IJKL=C Q=L E=R\n");
+    dkr::accessibility::speech::start();
     return true;
 }
 
 void dkr::runtime::platform::shutdown() {
+    dkr::accessibility::speech::stop();
 #if DKR_RUNTIME_HAS_RT64
     dkr::runtime::ui::shutdown_online_mods();
     CancelSdl3InputProbe();

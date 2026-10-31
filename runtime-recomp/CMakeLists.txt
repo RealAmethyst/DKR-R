@@ -271,6 +271,7 @@ target_include_directories(DKRNetplayCrypto PUBLIC
 )
 
 include(cmake/Updates.cmake)
+include(cmake/Accessibility.cmake)
 
 set(DKR_FRIEND_SERVICE_SOURCE src/game/netplay/friend_service.cpp)
 if(NOT DKR_RUNTIME_BUILD_GENERATED)
@@ -909,6 +910,8 @@ if(DKR_RUNTIME_BUILD_GENERATED)
         NOMINMAX
     )
     target_link_libraries(DKRPortGame PRIVATE DKRUpdateClient)
+    target_sources(DKRPortGame PRIVATE ${DKR_ACCESSIBILITY_GAME_SOURCES})
+    target_link_libraries(DKRPortGame PRIVATE DKRAccessibility)
     if(DKR_EXPERIMENTAL_RACE_TEST)
         target_compile_definitions(DKRPortGame PRIVATE DKR_EXPERIMENTAL_RACE_TEST=1)
     endif()
@@ -1445,6 +1448,8 @@ if(BUILD_TESTING)
     if(Python3_Interpreter_FOUND)
         add_test(NAME DKRStartupFlowPipeline
             COMMAND "${Python3_EXECUTABLE}" -B "${CMAKE_CURRENT_LIST_DIR}/tests/test_startup_flow_pipeline.py")
+        add_test(NAME DKRAccessibilityMenuPipeline
+            COMMAND "${Python3_EXECUTABLE}" -B "${CMAKE_CURRENT_LIST_DIR}/tests/test_accessibility_menu_pipeline.py")
         add_test(NAME DKRTrackSelectDrawPipeline
             COMMAND "${Python3_EXECUTABLE}" -B "${CMAKE_CURRENT_LIST_DIR}/tests/test_track_select_draw_pipeline.py")
     endif()

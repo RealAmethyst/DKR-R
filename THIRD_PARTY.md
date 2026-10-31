@@ -28,6 +28,7 @@ N64ModernRuntime must also satisfy GPL-3.0; see
 | Dear ImGui | Launcher and in-game settings UI | MIT |
 | DirectX Shader Compiler | Windows shader compilation | University of Illinois/NCSA and bundled notices |
 | dr_mp3 / dr_wav (mackron/dr_libs) | Decoding a custom track's own MP3/WAV music; vendored in `runtime-recomp/third_party/dr_libs` | Public domain (Unlicense) or MIT-0 |
+| Prism | Screen reader speech output (Orca, NVDA, JAWS, VoiceOver) for accessibility | MPL-2.0; incorporated libraries under their own licences (see `NOTICE`) |
 
 Exact dependency commits are recorded in `dependencies.lock.json`. Windows
 packages include applicable notices in `ThirdPartyLicenses`. Linux AppImages
@@ -41,6 +42,9 @@ data are included. Its MIT notice is distributed as `WAVE-RACE-WATER-LICENSE.txt
 
 The complete GekkoNet licence is distributed as `GEKKONET-LICENSE.txt`.
 The complete Monocypher licence is distributed as `MONOCYPHER-LICENSE.txt`.
+Linux packages distribute Prism's licence, `NOTICE` and the licence texts
+of the libraries it incorporates as `PRISM-LICENSE.txt`, `PRISM-NOTICE.txt`
+and `PRISM-LICENSES`.
 Quick Join packages also distribute the complete libdatachannel, Mbed TLS,
 libjuice, usrsctp, nlohmann/json and plog licence texts. The public PeerJS
 rendezvous carries signaling metadata only; DKR-R gameplay, controller input
