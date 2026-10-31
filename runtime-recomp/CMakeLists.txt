@@ -272,6 +272,7 @@ target_include_directories(DKRNetplayCrypto PUBLIC
 
 include(cmake/Updates.cmake)
 include(cmake/Accessibility.cmake)
+include(cmake/SteamAudio.cmake)
 
 set(DKR_FRIEND_SERVICE_SOURCE src/game/netplay/friend_service.cpp)
 if(NOT DKR_RUNTIME_BUILD_GENERATED)
