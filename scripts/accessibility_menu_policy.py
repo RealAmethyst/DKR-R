@@ -15,9 +15,6 @@ EVENTS = {
     "screen_opened": 1,
     "title_revealed": 2,
     "title_cursor": 3,
-    "options_cursor": 4,
-    "options_language": 5,
-    "options_subtitles": 6,
 }
 
 # Exact retail sites, verified against the decomp (src/menu.c), not a guessed
@@ -27,27 +24,18 @@ EVENTS = {
 #   menu_title_screen_loop: the SOUND_WHOOSH1 call when the title menu is
 #     revealed, and the SOUND_MENU_PICK2 call after gTitleScreenCurrentOption
 #     changed.
-#   menu_options_loop: the SOUND_MENU_PICK2 call after gMenuCurIndex changed,
-#     the one after set_language reloaded gOptionMenuStrings, and the join
-#     after either subtitles branch stored gOptionMenuStrings[1] (its click
-#     plays before the new text is stored).
+# The Options screen is the redesigned menu (options_menu_policy.py).
 JAL_SOUND_PLAY = 0x0C000741
 SITES = {
     "us.v77": [
         ("menu_init", 0x80081590, 0x3418D000, "screen_opened"),
         ("menu_title_screen_loop", 0x80083CA4, JAL_SOUND_PLAY, "title_revealed"),
         ("menu_title_screen_loop", 0x80083FBC, JAL_SOUND_PLAY, "title_cursor"),
-        ("menu_options_loop", 0x80084660, JAL_SOUND_PLAY, "options_cursor"),
-        ("menu_options_loop", 0x80084558, JAL_SOUND_PLAY, "options_language"),
-        ("menu_options_loop", 0x80084604, 0x3C09800E, "options_subtitles"),
     ],
     "us.v80": [
         ("menu_init", 0x800819E0, 0x3418D000, "screen_opened"),
         ("menu_title_screen_loop", 0x800840DC, JAL_SOUND_PLAY, "title_revealed"),
         ("menu_title_screen_loop", 0x800843F4, JAL_SOUND_PLAY, "title_cursor"),
-        ("menu_options_loop", 0x80084A98, JAL_SOUND_PLAY, "options_cursor"),
-        ("menu_options_loop", 0x80084990, JAL_SOUND_PLAY, "options_language"),
-        ("menu_options_loop", 0x80084A3C, 0x3C09800E, "options_subtitles"),
     ],
 }
 

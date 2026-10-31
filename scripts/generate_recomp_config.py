@@ -83,6 +83,9 @@ def main() -> int:
     from accessibility_menu_policy import compose_accessibility_menu
 
     policy = compose_accessibility_menu(policy, arguments.elf, revision)
+    from options_menu_policy import compose_options_menu
+
+    policy = compose_options_menu(policy, arguments.elf, revision)
     if arguments.water_profile:
         from water_profile_policy import compose_water_profile
 

@@ -1,9 +1,14 @@
 #pragma once
 
+#include "runtime_enhancements.hpp"
+
+#include <cstddef>
 #include <filesystem>
 #include <cstdint>
 #include <memory>
+#include <optional>
 #include <string>
+#include <vector>
 
 namespace dkr::mods { struct PreparedModLaunch; }
 namespace dkr::mods::online { class RuntimeResources; }
@@ -38,6 +43,20 @@ void shutdown_online_mods();
 // Throws rather than silently launching if an accepted mod proof is missing.
 std::shared_ptr<const dkr::mods::online::RuntimeResources> online_mod_resources();
 void persist_settings();
+// Settings shared with the redesigned in-game Options menu. Channels follow
+// the Sound page: 0 master, 1 music, 2 sound effects, 3 vehicles, 4 nature.
+float sound_level(std::size_t channel);
+void set_sound_level(std::size_t channel, float level);
+std::vector<std::string> sound_preset_labels();
+// The equaliser preset matching the current curve; nullopt for a custom one.
+std::optional<std::size_t> sound_preset();
+bool sound_custom_curve_kept();
+// A preset, or nullopt for the kept custom curve.
+void apply_sound_preset(std::optional<std::size_t> preset);
+// Bands 0 bass, 1 mid, 2 treble, in whole decibels (-12 to 12).
+int sound_band(std::size_t band);
+void set_sound_band(std::size_t band, int decibels);
+void set_presentation_profile(enhancements::PresentationProfile profile);
 // Called only after an explicitly selected renderer backend fails and RT64
 // successfully recovers with Automatic. Persist the recovered choice so the
 // next launch does not repeat the same failure loop.
