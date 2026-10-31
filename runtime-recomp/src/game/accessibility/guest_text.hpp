@@ -18,6 +18,8 @@ constexpr bool guest_readable(std::uint32_t address, std::uint32_t bytes) {
 
 // Read-only, range-checked guest reads; nullopt instead of a bad access.
 std::optional<std::uint32_t> guest_word(std::uint8_t* rdram, std::uint32_t address);
+std::optional<std::int16_t> guest_half(std::uint8_t* rdram, std::uint32_t address);
+std::optional<std::int8_t> guest_byte(std::uint8_t* rdram, std::uint32_t address);
 std::optional<std::string> guest_string(std::uint8_t* rdram, std::uint32_t address,
                                         std::size_t maximum = 128);
 

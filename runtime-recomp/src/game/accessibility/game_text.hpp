@@ -16,6 +16,10 @@ std::optional<std::string> menu_text(std::uint8_t* rdram, std::uint32_t index);
 // The string a pointer array (such as gAudioOutputStrings) holds at a slot.
 std::optional<std::string> string_array_entry(std::uint8_t* rdram, const char* array, std::uint32_t slot);
 
+// A 32-bit game variable by its symbol name; logs and returns nullopt when
+// the symbol or the read cannot be verified.
+std::optional<std::int32_t> symbol_s32(std::uint8_t* rdram, const char* name);
+
 // The string at a guest pointer.
 std::optional<std::string> pointed_text(std::uint8_t* rdram, std::uint32_t pointer);
 

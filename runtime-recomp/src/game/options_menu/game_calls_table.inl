@@ -22,3 +22,7 @@
 .music_volume_config_set = music_volume_config_set,
 .sndp_get_global_volume = sndp_get_global_volume,
 .sndp_set_global_volume = sndp_set_global_volume,
+.level_name = level_name,
+.level_world_id = level_world_id,
+.leveltable_vehicle_usable = leveltable_vehicle_usable,
+.filename_decompress = filename_decompress,

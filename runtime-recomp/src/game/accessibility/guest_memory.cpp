@@ -16,6 +16,20 @@ std::optional<std::uint32_t> guest_word(std::uint8_t* rdram, std::uint32_t addre
     return static_cast<std::uint32_t>(MEM_W(0, guest_register(address)));
 }
 
+std::optional<std::int16_t> guest_half(std::uint8_t* rdram, std::uint32_t address) {
+    if (rdram == nullptr || address % 2U != 0U || !guest_readable(address, 2U)) {
+        return std::nullopt;
+    }
+    return static_cast<std::int16_t>(MEM_H(0, guest_register(address)));
+}
+
+std::optional<std::int8_t> guest_byte(std::uint8_t* rdram, std::uint32_t address) {
+    if (rdram == nullptr || !guest_readable(address, 1U)) {
+        return std::nullopt;
+    }
+    return static_cast<std::int8_t>(MEM_B(0, guest_register(address)));
+}
+
 std::optional<std::string> guest_string(std::uint8_t* rdram, std::uint32_t address, std::size_t maximum) {
     if (rdram == nullptr || !guest_readable(address, 1U)) {
         return std::nullopt;
