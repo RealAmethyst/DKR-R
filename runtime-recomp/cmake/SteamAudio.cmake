@@ -189,7 +189,7 @@ set(DKR_SPATIAL_AUDIO_GAME_SOURCES
 )
 target_include_directories(DKRSpatialAudio PUBLIC "${CMAKE_CURRENT_LIST_DIR}/../src/game")
 target_compile_features(DKRSpatialAudio PUBLIC cxx_std_20)
-target_link_libraries(DKRSpatialAudio PUBLIC DKRSteamAudio)
+target_link_libraries(DKRSpatialAudio PUBLIC DKRSteamAudio DKRRaceCues)
 
 if(BUILD_TESTING)
     add_executable(DKRSpatialAudioTests tests/spatial_audio_tests.cpp)

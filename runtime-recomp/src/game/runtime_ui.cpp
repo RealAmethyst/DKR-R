@@ -1,5 +1,6 @@
 #include "runtime_ui.hpp"
 #include "options_menu/game_audio_memory.hpp"
+#include "race_cues/cue_settings.hpp"
 #include "launcher_copy_policy.hpp"
 #include "lobby_privacy_policy.hpp"
 #include "online_view_policy.hpp"
@@ -1719,6 +1720,7 @@ void SaveSettings() {
         output << "audio_output_device="
                << dkr::runtime::platform::audio_output_device() << '\n';
         dkr::options_menu::write_game_audio_settings(output);
+        dkr::race_cues::write_settings(output);
         if (g_eq_custom) {
             output << "eq_custom=" << (*g_eq_custom)[0] << ',' << (*g_eq_custom)[1]
                    << ',' << (*g_eq_custom)[2] << '\n';
@@ -2136,6 +2138,9 @@ void LoadSettings() {
             continue;
         }
         if (dkr::options_menu::load_game_audio_setting(key, value)) {
+            continue;
+        }
+        if (dkr::race_cues::load_setting(key, value)) {
             continue;
         }
         // Outside the chain below, which is already at MSVC's nesting limit.

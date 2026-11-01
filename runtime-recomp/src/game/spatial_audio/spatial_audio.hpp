@@ -17,6 +17,8 @@ void start(std::uint32_t output_rate);
 void stop();
 // True while anything is sounding or still draining.
 bool active();
+// True while the binaural renderer runs, so it can take the race cues.
+bool binaural_available();
 // Before mix_into for the game's output buffer at `samples` (inside RDRAM):
 // hands that frame's captured voices to the renderer.
 void begin_output_block(const void* samples);

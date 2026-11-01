@@ -412,6 +412,9 @@ install -m 0644 "${PROJECT_ROOT}"/assets/filters/*.png \
 mkdir -p "${APPDIR}/usr/bin/assets/controllers"
 install -m 0644 "${PROJECT_ROOT}/assets/controllers/gamecontrollerdb.txt" \
   "${APPDIR}/usr/bin/assets/controllers/gamecontrollerdb.txt"
+mkdir -p "${APPDIR}/usr/bin/assets/sounds"
+install -m 0644 "${PROJECT_ROOT}"/assets/sounds/*.wav \
+  "${APPDIR}/usr/bin/assets/sounds/"
 
 # Keep SDL3 outside usr/bin so it cannot replace or interpose on the SDL2 ABI
 # used by the single launcher/game window. The helper has an $ORIGIN rpath and

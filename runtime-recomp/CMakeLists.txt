@@ -272,6 +272,7 @@ target_include_directories(DKRNetplayCrypto PUBLIC
 
 include(cmake/Updates.cmake)
 include(cmake/Accessibility.cmake)
+include(cmake/RaceCues.cmake)
 include(cmake/SteamAudio.cmake)
 
 set(DKR_FRIEND_SERVICE_SOURCE src/game/netplay/friend_service.cpp)
@@ -917,6 +918,8 @@ if(DKR_RUNTIME_BUILD_GENERATED)
     target_link_libraries(DKRPortGame PRIVATE DKRAccessibility)
     target_sources(DKRPortGame PRIVATE ${DKR_SPATIAL_AUDIO_GAME_SOURCES})
     target_link_libraries(DKRPortGame PRIVATE DKRSpatialAudio)
+    target_sources(DKRPortGame PRIVATE ${DKR_RACE_CUES_GAME_SOURCES})
+    target_link_libraries(DKRPortGame PRIVATE DKRRaceCues)
     if(DKR_EXPERIMENTAL_RACE_TEST)
         target_compile_definitions(DKRPortGame PRIVATE DKR_EXPERIMENTAL_RACE_TEST=1)
     endif()
@@ -1034,7 +1037,14 @@ if(DKR_RUNTIME_BUILD_GENERATED)
             COMMAND "${CMAKE_COMMAND}" -E copy_directory
                 "${CMAKE_CURRENT_LIST_DIR}/../assets/ui/CustomTrackBackgrounds"
                 "${DKR_GAME_ASSET_DIRECTORY}/assets/ui/CustomTrackBackgrounds"
-            COMMENT "Staging the DKR-R launcher, graphics and controller assets"
+            COMMAND "${CMAKE_COMMAND}" -E make_directory
+                "${DKR_GAME_ASSET_DIRECTORY}/assets/sounds"
+            COMMAND "${CMAKE_COMMAND}" -E copy_if_different
+                "${CMAKE_CURRENT_LIST_DIR}/../assets/sounds/track_edge.wav"
+                "${CMAKE_CURRENT_LIST_DIR}/../assets/sounds/turn_signal.wav"
+                "${CMAKE_CURRENT_LIST_DIR}/../assets/sounds/beacon.wav"
+                "${DKR_GAME_ASSET_DIRECTORY}/assets/sounds"
+            COMMENT "Staging the DKR-R launcher, graphics, controller and sound assets"
             VERBATIM
         )
     endif()

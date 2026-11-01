@@ -15,6 +15,7 @@
 #include "runtime_netplay.hpp"
 #include "startup_performance.hpp"
 #include "runtime_telemetry.hpp"
+#include "race_cues/cue_audio.hpp"
 #include "spatial_audio/spatial_audio.hpp"
 #include "sdl3_input_client.hpp"
 #include "ultramodern/ultramodern.hpp"
@@ -171,6 +172,7 @@ std::vector<std::int16_t> g_audio_swap_buffer;
 std::vector<float> g_custom_music_buffer;
 // Binaurally rendered positioned sounds, mixed with the game mix per block.
 std::vector<float> g_spatial_audio_buffer;
+std::vector<float> g_race_cue_buffer;
 dkr::runtime::audio::StereoEqualizer g_audio_equalizer;
 std::uint32_t g_audio_callback_frames = 0;
 bool g_audio_playback_started = false;
@@ -2230,7 +2232,9 @@ void dkr::runtime::platform::queue_audio(std::int16_t* samples,
                                                sample_count / 2U, g_audio_frequency);
         }
         // Positioned sounds join the game mix before the equaliser and master
-        // volume, like the game's own sounds.
+        // volume, like the game's own sounds. The race cues go through the
+        // binaural renderer in HEADPHONES, and are panned otherwise.
+        dkr::race_cues::begin_block(dkr::runtime::spatial_audio::binaural_available());
         dkr::runtime::spatial_audio::begin_output_block(samples);
         const bool spatial_audio_active = dkr::runtime::spatial_audio::active();
         if (spatial_audio_active) {
@@ -2238,15 +2242,23 @@ void dkr::runtime::platform::queue_audio(std::int16_t* samples,
             dkr::runtime::spatial_audio::mix_into(g_spatial_audio_buffer.data(),
                                                   sample_count / 2U);
         }
+        const bool race_cues_panned = !dkr::race_cues::binaural();
+        if (race_cues_panned) {
+            g_race_cue_buffer.assign(sample_count, 0.0F);
+            dkr::race_cues::mix_panned(g_race_cue_buffer.data(), sample_count / 2U,
+                                       g_audio_frequency);
+        }
         for (std::size_t i = 0; i < sample_count; i += 2) {
             // RDRAM's 32-bit word swap leaves each native stereo pair in R,L
             // order. Restore conventional L,R order before sending it to SDL.
             const float volume = g_master_volume.load(std::memory_order_relaxed);
             const auto filtered = g_audio_equalizer.process(
                 static_cast<float>(samples[i + 1]) + (custom_music_active ? g_custom_music_buffer[i] : 0.0F) +
-                    (spatial_audio_active ? g_spatial_audio_buffer[i] : 0.0F),
+                    (spatial_audio_active ? g_spatial_audio_buffer[i] : 0.0F) +
+                    (race_cues_panned ? g_race_cue_buffer[i] : 0.0F),
                 static_cast<float>(samples[i]) + (custom_music_active ? g_custom_music_buffer[i + 1] : 0.0F) +
-                    (spatial_audio_active ? g_spatial_audio_buffer[i + 1] : 0.0F));
+                    (spatial_audio_active ? g_spatial_audio_buffer[i + 1] : 0.0F) +
+                    (race_cues_panned ? g_race_cue_buffer[i + 1] : 0.0F));
             float ui_tone = 0.0F;
             if (g_ui_tone_frames_remaining != 0U &&
                 g_ui_tone_total_frames != 0U && g_audio_frequency != 0U) {
@@ -2447,6 +2459,9 @@ void ReopenGameAudioLocked(std::uint32_t frequency) {
     g_audio_equalizer.reset();
     std::fprintf(stderr, "[boot][audio] device opened requested=%u actual=%d format=%04X channels=%u\n",
                  frequency, obtained.freq, obtained.format, obtained.channels);
+    dkr::race_cues::load_sounds(RuntimeAssetPath("assets/sounds/track_edge.wav"),
+                                RuntimeAssetPath("assets/sounds/turn_signal.wav"),
+                                RuntimeAssetPath("assets/sounds/beacon.wav"));
     dkr::runtime::spatial_audio::start(g_audio_frequency);
 }
 } // namespace

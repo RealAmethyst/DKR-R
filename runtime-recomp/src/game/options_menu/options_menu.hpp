@@ -24,6 +24,8 @@ enum class PageId {
     AdvancedWater,
     PerformanceOverlay,
     Audio,
+    AccessibilityOptions,
+    AudioCues,
 };
 
 enum class ItemId {
@@ -33,6 +35,7 @@ enum class ItemId {
     AudioOptions,
     SaveOptions,
     MagicCodes,
+    AccessibilityOptions,
     Return,
     // General
     Language,
@@ -139,6 +142,18 @@ enum class ItemId {
     EqualiserBass,
     EqualiserMid,
     EqualiserTreble,
+    // Accessibility
+    AudioCues,
+    // Audio cues (race_cues/cue_settings.hpp)
+    TrackEdgeSound,
+    TrackEdgeVolume,
+    TrackEdgeDistance,
+    TurnSignal,
+    TurnSignalVolume,
+    TurnSignalDirection,
+    TurnWarningTime,
+    BeaconSound,
+    BeaconVolume,
 };
 
 enum class ItemKind {

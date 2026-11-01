@@ -9,9 +9,11 @@
 option(DKR_ACCESSIBILITY_SPEECH "Screen reader speech through Prism" ${DKR_RUNTIME_BUILD_RT64})
 set(DKR_PRISM_SOURCE "${DKR_DEPENDENCIES_DIR}/prism")
 
-# Game-independent parts: speech, wording and text preparation.
+# Game-independent parts: speech, wording, text preparation and game text
+# decoding.
 add_library(DKRAccessibility STATIC
     src/game/accessibility/display_text.cpp
+    src/game/accessibility/game_text_asset.cpp
     src/game/accessibility/guest_text.cpp
     src/game/accessibility/localization.cpp
     src/game/accessibility/speech.cpp
@@ -99,6 +101,15 @@ if(BUILD_TESTING)
     target_compile_features(DKRAccessibilityMenuSpeechTests PRIVATE cxx_std_20)
     add_test(NAME DKRAccessibilityMenuSpeech COMMAND DKRAccessibilityMenuSpeechTests)
 
+    add_executable(DKRAccessibilityGameTextTests
+        tests/accessibility_game_text_tests.cpp
+        src/game/accessibility/game_text_asset.cpp
+    )
+    target_include_directories(DKRAccessibilityGameTextTests PRIVATE
+        "${CMAKE_CURRENT_LIST_DIR}/../src/game")
+    target_compile_features(DKRAccessibilityGameTextTests PRIVATE cxx_std_20)
+    add_test(NAME DKRAccessibilityGameText COMMAND DKRAccessibilityGameTextTests)
+
     add_executable(DKROptionsMenuTests
         tests/options_menu_tests.cpp
         src/game/options_menu/options_menu.cpp
@@ -120,7 +131,8 @@ if(BUILD_TESTING)
 
     # The tests check with assert(), which release configurations compile out.
     foreach(accessibility_test IN ITEMS DKRAccessibilitySpeechServiceTests DKRAccessibilityMenuSpeechTests
-                                        DKROptionsMenuTests DKROptionsMenuDisplayTextTests)
+                                        DKRAccessibilityGameTextTests DKROptionsMenuTests
+                                        DKROptionsMenuDisplayTextTests)
         if(MSVC)
             target_compile_options(${accessibility_test} PRIVATE /UNDEBUG)
         else()
