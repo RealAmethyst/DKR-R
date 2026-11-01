@@ -12,6 +12,7 @@
 #include "runtime_enhancements.hpp"
 #include "runtime_hud_layout.hpp"
 #include "runtime_netplay.hpp"
+#include "spatial_audio/game_capture.hpp"
 #include "vehicle_context_policy.hpp"
 
 #include <array>
@@ -1330,10 +1331,11 @@ extern "C" void dkr_presentation_scene_begin(std::uint8_t*, recomp_context*) {
 }
 
 extern "C" void dkr_presentation_frame_begin(std::uint8_t* rdram,
-                                              recomp_context*) {
+                                              recomp_context* context) {
     dkr::runtime::hud::begin_authored_frame(rdram);
     dkr::runtime::presentation::postrace_presentation_begin_frame();
     dkr::runtime::custom_music::tick(rdram);
+    dkr::runtime::spatial_audio::capture(rdram, context);
     const auto visual_ticks=std::clamp(ReadU32(rdram,dkr::runtime::revision_addresses::LogicUpdateRate),1U,12U);
     g_presentation_ticks.fetch_add(visual_ticks,std::memory_order_relaxed);
     const std::uint64_t frame =

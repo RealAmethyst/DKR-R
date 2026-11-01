@@ -148,3 +148,36 @@ rollback runtime.
 - Sampling point: the existing post-mode `main_game_loop` hook (once per
   logic tick, after racers and cameras); skip rollback replays. Absent data
   (hubs, battle arenas, custom tracks) must fail closed.
+
+## Verified for the snapshot (#32, 2026-10-31)
+
+Checked against the decomp source, both revisions' symbol tables and the
+recompiled v77 code. Corrections to the notes above are marked.
+
+- Axes: +Y up; yaw 0 faces +Z, increasing yaw turns right (camera placement
+  in `racer.c`: kart + boom * (sin yaw, -cos yaw)). Listener frame (+x right,
+  +y up, -z ahead) from d = emitter - camera: x = -(dx cos Y + dz sin Y),
+  y = dy, z = dx sin Y - dz cos Y; negate x on Mirrored Tracks
+  (`get_filtered_cheats() & (1 << 2)`; the world is not mirrored). This
+  matches `audspat_calculate_spatial_pan`: pan 0 (full left) for +X at yaw 0.
+- Correction: the AI engines' game listener is the player's kart (the camera
+  only once that player finished), with camera 0's yaw.
+- Correction: `_pullSubFrame` is a separate static function (v77 0x800CAC5C,
+  v80 0x800CB1BC), called from `alEnvmixerPull`, not inlined.
+- `gSoundPlayer + 0x40` is `soundStatesArray` (32 `ALSoundState` of 0x40,
+  allocated once: in v77 `sndp_init_player` the `alHeapAlloc` result of
+  the call at 0x80003224 is stored at `gSoundPlayerPtr + 0x40`). A handle is the emitter's if it lies in that array,
+  `state` (+0x3F) is not NONE and `userHandle` (+0x30) points back at the
+  emitter's handle field. Its voice: `pvoice` at +0x14, valid while
+  `pvoice->vvoice` (+0x08) is the handle + 0x0C and the state is PLAYING;
+  the envmixer state (the A_ENVMIXER key) is at `PVoice + 0xA0`
+  (envmixer +0x8C, `ALFilter` 0x14 bytes, then `state`).
+- Emitters: `AudioPoint` (0x24: pos 0x00, soundHandle 0x18) through the
+  pointer array `gAudioPoints`, `gNumAudioPoints` live entries (indices move
+  on removal); `AudioLine` (0x180: type 0x00, coords 0x04, soundBite 0x16C,
+  soundHandle 0x178, numSegments 0x17C, segment k from vertex k to k + 1;
+  type 1 drives the jingle player); `gBackgroundRacerSounds[2]` ->
+  `VehicleSoundData` (soundHandle[2] 0x48, idle 0x50, racerPos 0x78); player
+  engines through `gRacersByPort[i]` -> `Object+0x64` -> `Object_Racer+0x118`.
+- Implemented in `runtime-recomp/src/game/spatial_audio/game_capture.cpp`
+  (read once per authored frame from the frame-begin hook).

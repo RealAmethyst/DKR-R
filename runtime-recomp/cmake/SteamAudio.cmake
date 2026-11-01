@@ -24,6 +24,10 @@ option(DKR_STEAM_AUDIO "Binaural rendering of positioned sounds through Steam Au
 # it is a set of no-ops and the game keeps today's stereo mix.
 if(NOT DKR_STEAM_AUDIO)
     add_library(DKRSpatialAudio STATIC src/game/spatial_audio/spatial_audio_disabled.cpp)
+    set(DKR_SPATIAL_AUDIO_GAME_SOURCES
+        src/game/spatial_audio/audio_task_disabled.cpp
+        src/game/spatial_audio/game_capture_disabled.cpp
+    )
     target_include_directories(DKRSpatialAudio PUBLIC "${CMAKE_CURRENT_LIST_DIR}/../src/game")
     target_compile_features(DKRSpatialAudio PUBLIC cxx_std_20)
     return()
@@ -167,10 +171,21 @@ set_target_properties(DKRSteamAudio PROPERTIES
 add_dependencies(DKRSteamAudio dkr_steam_audio_phonon)
 
 add_library(DKRSpatialAudio STATIC
+    src/game/spatial_audio/alist_rewrite.cpp
     src/game/spatial_audio/binaural_renderer.cpp
+    src/game/spatial_audio/envelope.cpp
     src/game/spatial_audio/half_band_decimator.cpp
+    src/game/spatial_audio/snapshot.cpp
     src/game/spatial_audio/spatial_audio.cpp
     src/game/spatial_audio/test_tone.cpp
+    src/game/spatial_audio/trace.cpp
+    src/game/spatial_audio/voice_capture.cpp
+)
+# These read and write game memory, so they are compiled into the game
+# executable.
+set(DKR_SPATIAL_AUDIO_GAME_SOURCES
+    src/game/spatial_audio/audio_task.cpp
+    src/game/spatial_audio/game_capture.cpp
 )
 target_include_directories(DKRSpatialAudio PUBLIC "${CMAKE_CURRENT_LIST_DIR}/../src/game")
 target_compile_features(DKRSpatialAudio PUBLIC cxx_std_20)
@@ -181,6 +196,29 @@ if(BUILD_TESTING)
     target_link_libraries(DKRSpatialAudioTests PRIVATE DKRSpatialAudio)
     target_compile_options(DKRSpatialAudioTests PRIVATE -UNDEBUG)
     add_test(NAME DKRSpatialAudio COMMAND DKRSpatialAudioTests)
+
+    # Runs the recompiled audio microcode on synthetic command lists. Its data
+    # segment comes from the ROM (aspMain.databin.bin in the decomp's extracted
+    # assets) and is never committed; without it the test reports a skip.
+    set(DKR_ASPMAIN_DATA "" CACHE FILEPATH
+        "DKR audio microcode data segment, for the voice capture test")
+    add_executable(DKRVoiceCaptureTests
+        tests/voice_capture_tests.cpp
+        src/game/spatial_audio/alist_rewrite.cpp
+        src/game/spatial_audio/envelope.cpp
+        "${DKR_GENERATED_RSP_SOURCE}/aspMain.cpp"
+    )
+    target_include_directories(DKRVoiceCaptureTests PRIVATE
+        "${CMAKE_CURRENT_LIST_DIR}/../src/game"
+        "${DKR_DEPENDENCIES_DIR}/n64-modern-runtime/librecomp/include"
+        "${DKR_DEPENDENCIES_DIR}/n64-modern-runtime/ultramodern/include"
+        "${DKR_DEPENDENCIES_DIR}/n64-modern-runtime/N64Recomp/include"
+    )
+    target_compile_features(DKRVoiceCaptureTests PRIVATE cxx_std_20)
+    # The recompiled RSP vector unit uses SSE4.1, as in DKRPortGame.
+    target_compile_options(DKRVoiceCaptureTests PRIVATE -UNDEBUG -msse4.1)
+    add_test(NAME DKRVoiceCapture COMMAND DKRVoiceCaptureTests ${DKR_ASPMAIN_DATA})
+    set_tests_properties(DKRVoiceCapture PROPERTIES SKIP_RETURN_CODE 77)
 
     # Checks the built library itself: the default HRTF loads at the output
     # rate and the binaural effect places sound on the expected side.

@@ -48,6 +48,7 @@
 
 #include "librecomp/game.hpp"
 #include "librecomp/rsp.hpp"
+#include "spatial_audio/audio_task.hpp"
 #include "ultramodern/config.hpp"
 #include "ultramodern/ultramodern.hpp"
 
@@ -195,7 +196,7 @@ RspUcodeFunc* GetRspMicrocode(const OSTask* task) {
             return EmptyAudioTask;
         }
         return +[](std::uint8_t* rdram, std::uint32_t ucode_address) {
-            return dkrAspMain(rdram, ucode_address);
+            return dkr::runtime::spatial_audio::run_audio_task(rdram, ucode_address, dkrAspMain);
         };
     }
     std::fprintf(stderr,

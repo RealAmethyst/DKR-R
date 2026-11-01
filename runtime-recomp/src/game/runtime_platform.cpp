@@ -2231,6 +2231,7 @@ void dkr::runtime::platform::queue_audio(std::int16_t* samples,
         }
         // Positioned sounds join the game mix before the equaliser and master
         // volume, like the game's own sounds.
+        dkr::runtime::spatial_audio::begin_output_block(samples);
         const bool spatial_audio_active = dkr::runtime::spatial_audio::active();
         if (spatial_audio_active) {
             g_spatial_audio_buffer.assign(sample_count, 0.0F);
