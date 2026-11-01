@@ -1,5 +1,6 @@
 #pragma once
 
+#include "spatial_audio/direction.hpp"
 #include "spatial_audio/half_band_decimator.hpp"
 
 #include <phonon.h>
@@ -9,13 +10,6 @@
 #include <cstdint>
 
 namespace dkr::runtime::spatial_audio {
-
-// A direction in the listener's frame: +x right, +y up, -z ahead.
-struct Direction {
-    float x = 0.0F;
-    float y = 0.0F;
-    float z = -1.0F;
-};
 
 // A mono sound placed around the listener. Called on the audio thread.
 class Source {
@@ -37,7 +31,8 @@ public:
 // share an HRTF must run on one thread. Nothing allocates after start().
 class Renderer {
 public:
-    static constexpr std::size_t kVoiceCount = 16;
+    // As many as the game's own voices (40 PVoices, audio.c).
+    static constexpr std::size_t kVoiceCount = 40;
     static constexpr std::size_t kFrameSize = 256;
 
     Renderer() = default;

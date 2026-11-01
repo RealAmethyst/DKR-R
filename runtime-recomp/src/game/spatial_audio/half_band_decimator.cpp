@@ -10,14 +10,14 @@ constexpr double kPi = 3.14159265358979323846;
 // Sinc low-pass at a quarter of the input rate under a Blackman window.
 // Measured from 44.1 to 22.05 kHz: within 0.5 dB up to 10 kHz, at least 74 dB
 // down from 13 kHz, so what folds back lands only in the 9-11 kHz edge.
-std::array<float, HalfBandDecimator::kTaps> MakeCoefficients() {
-    std::array<float, HalfBandDecimator::kTaps> coefficients{};
-    constexpr int kCentre = static_cast<int>(HalfBandDecimator::kTaps / 2);
+std::array<float, kHalfBandTaps> MakeCoefficients() {
+    std::array<float, kHalfBandTaps> coefficients{};
+    constexpr int kCentre = static_cast<int>(kHalfBandTaps / 2);
     double sum = 0.0;
-    for (int tap = 0; tap < static_cast<int>(HalfBandDecimator::kTaps); ++tap) {
+    for (int tap = 0; tap < static_cast<int>(kHalfBandTaps); ++tap) {
         const int offset = tap - kCentre;
         const double sinc = offset == 0 ? 0.5 : std::sin(kPi * offset / 2.0) / (kPi * offset);
-        const double phase = 2.0 * kPi * tap / (HalfBandDecimator::kTaps - 1);
+        const double phase = 2.0 * kPi * tap / (kHalfBandTaps - 1);
         const double window = 0.42 - 0.5 * std::cos(phase) + 0.08 * std::cos(2.0 * phase);
         coefficients[static_cast<std::size_t>(tap)] = static_cast<float>(sinc * window);
         sum += sinc * window;
@@ -28,17 +28,21 @@ std::array<float, HalfBandDecimator::kTaps> MakeCoefficients() {
     return coefficients;
 }
 
-const std::array<float, HalfBandDecimator::kTaps> kCoefficients = MakeCoefficients();
-
 float Filter(const float* history) {
+    const std::array<float, kHalfBandTaps>& coefficients = half_band_coefficients();
     float sum = 0.0F;
-    for (std::size_t tap = 0; tap < HalfBandDecimator::kTaps; ++tap) {
-        sum += history[tap] * kCoefficients[tap];
+    for (std::size_t tap = 0; tap < kHalfBandTaps; ++tap) {
+        sum += history[tap] * coefficients[tap];
     }
     return sum;
 }
 
 } // namespace
+
+const std::array<float, kHalfBandTaps>& half_band_coefficients() {
+    static const std::array<float, kHalfBandTaps> coefficients = MakeCoefficients();
+    return coefficients;
+}
 
 void HalfBandDecimator::reset() {
     left_.fill(0.0F);
@@ -62,6 +66,25 @@ void HalfBandDecimator::process(const float* input, float* output,
         // position_ is the oldest sample; the window runs oldest to newest.
         output[frame * 2] = Filter(left_.data() + position_);
         output[frame * 2 + 1] = Filter(right_.data() + position_);
+    }
+}
+
+void HalfBandInterpolator::reset() {
+    history_.fill(0.0F);
+    position_ = 0;
+}
+
+float HalfBandInterpolator::push(float sample) {
+    history_[position_] = sample;
+    history_[position_ + kHalfBandTaps] = sample;
+    position_ = (position_ + 1) % kHalfBandTaps;
+    return 2.0F * Filter(history_.data() + position_);
+}
+
+void HalfBandInterpolator::process(const float* input, float* output, std::size_t frames) {
+    for (std::size_t frame = 0; frame < frames; ++frame) {
+        output[frame * 2] = push(input[frame]);
+        output[frame * 2 + 1] = push(0.0F);
     }
 }
 

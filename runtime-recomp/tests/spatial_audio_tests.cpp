@@ -1,5 +1,6 @@
 #include "spatial_audio/binaural_renderer.hpp"
 #include "spatial_audio/half_band_decimator.hpp"
+#include "spatial_audio/snapshot.hpp"
 #include "spatial_audio/test_tone.hpp"
 
 #include <cassert>
@@ -9,6 +10,13 @@
 #include <vector>
 
 using dkr::runtime::spatial_audio::Direction;
+using dkr::runtime::spatial_audio::Emitter;
+using dkr::runtime::spatial_audio::EmitterKind;
+using dkr::runtime::spatial_audio::Listener;
+using dkr::runtime::spatial_audio::Snapshot;
+using dkr::runtime::spatial_audio::SnapshotChannel;
+using dkr::runtime::spatial_audio::Vec3;
+using dkr::runtime::spatial_audio::listener_direction;
 using dkr::runtime::spatial_audio::HalfBandDecimator;
 using dkr::runtime::spatial_audio::Renderer;
 using dkr::runtime::spatial_audio::Source;
@@ -149,7 +157,7 @@ void game_rate_source_is_placed_and_drains_after_it_ends() {
     assert(left_energy.left > 2.0 * left_energy.right);
 }
 
-void sixteen_voices_then_no_more() {
+void every_voice_then_no_more() {
     Renderer renderer;
     assert(renderer.start(48000));
     assert(renderer.processing_rate() == 48000);
@@ -203,6 +211,79 @@ void test_tone_cycles_left_right_ahead_behind() {
     assert(energy > 0.0);
 }
 
+bool Near(float value, float expected) {
+    return std::fabs(value - expected) < 1.0e-3F;
+}
+
+// Expected directions follow the game's own conventions, independently of the
+// conversion: the camera sits behind the kart at kart + boom * (sin yaw,
+// -cos yaw) (racer.c), so it faces (-sin yaw, cos yaw); and
+// audspat_calculate_spatial_pan pans a sound at +X fully left at yaw 0.
+void listener_frame_matches_the_game() {
+    Listener listener;
+    listener.position = Vec3{100.0F, 5.0F, -40.0F};
+    listener.yaw = 0;
+    // Yaw 0 faces +Z.
+    Direction ahead = listener_direction(listener, Vec3{100.0F, 5.0F, -30.0F});
+    assert(Near(ahead.x, 0.0F) && Near(ahead.y, 0.0F) && Near(ahead.z, -10.0F));
+    // +X is on the left at yaw 0, as the game's pan has it.
+    Direction left = listener_direction(listener, Vec3{110.0F, 5.0F, -40.0F});
+    assert(Near(left.x, -10.0F) && Near(left.z, 0.0F));
+    // Height is kept.
+    Direction above = listener_direction(listener, Vec3{100.0F, 25.0F, -40.0F});
+    assert(Near(above.y, 20.0F));
+    // Yaw 0x4000 (a quarter turn right) faces -X: the camera at
+    // kart + (1, 0) * boom looks back toward the kart.
+    listener.yaw = 0x4000;
+    ahead = listener_direction(listener, Vec3{90.0F, 5.0F, -40.0F});
+    assert(Near(ahead.x, 0.0F) && Near(ahead.z, -10.0F));
+    Direction behind = listener_direction(listener, Vec3{110.0F, 5.0F, -40.0F});
+    assert(Near(behind.z, 10.0F));
+    // Turning right moves +Z (ahead at yaw 0) to the left.
+    left = listener_direction(listener, Vec3{100.0F, 5.0F, -30.0F});
+    assert(Near(left.x, -10.0F));
+    // Mirrored Tracks flips left and right only.
+    listener.mirrored = true;
+    const Direction mirrored = listener_direction(listener, Vec3{100.0F, 5.0F, -30.0F});
+    assert(Near(mirrored.x, 10.0F) && Near(mirrored.z, 0.0F));
+    // Negative yaw (s16) is the same turn as its unsigned value.
+    listener.mirrored = false;
+    listener.yaw = static_cast<std::int16_t>(-0x4000);
+    const Direction quarter_left = listener_direction(listener, Vec3{110.0F, 5.0F, -40.0F});
+    assert(Near(quarter_left.z, -10.0F));
+}
+
+void closest_point_is_clamped_to_the_segment() {
+    const Vec3 a{0.0F, 0.0F, 0.0F};
+    const Vec3 b{10.0F, 0.0F, 0.0F};
+    Vec3 closest = dkr::runtime::spatial_audio::closest_point_on_segment(Vec3{4.0F, 3.0F, 0.0F}, a, b);
+    assert(Near(closest.x, 4.0F) && Near(closest.y, 0.0F));
+    closest = dkr::runtime::spatial_audio::closest_point_on_segment(Vec3{-5.0F, 1.0F, 0.0F}, a, b);
+    assert(Near(closest.x, 0.0F));
+    closest = dkr::runtime::spatial_audio::closest_point_on_segment(Vec3{15.0F, 1.0F, 0.0F}, a, b);
+    assert(Near(closest.x, 10.0F));
+    closest = dkr::runtime::spatial_audio::closest_point_on_segment(Vec3{3.0F, 3.0F, 3.0F}, a, a);
+    assert(Near(closest.x, 0.0F));
+}
+
+void channel_hands_over_the_newest_snapshot() {
+    SnapshotChannel channel;
+    Snapshot out;
+    assert(!channel.latest(out));
+    for (std::uint64_t tick = 1; tick <= 5; ++tick) {
+        Snapshot snapshot;
+        snapshot.tick = tick;
+        channel.publish(snapshot);
+    }
+    assert(channel.latest(out) && out.tick == 5);
+    // Nothing new: the same snapshot again.
+    assert(channel.latest(out) && out.tick == 5);
+    Snapshot next;
+    next.tick = 6;
+    channel.publish(next);
+    assert(channel.latest(out) && out.tick == 6);
+}
+
 } // namespace
 
 int main() {
@@ -210,9 +291,12 @@ int main() {
     unsupported_rate_stays_off_and_mixes_nothing();
     silent_until_a_source_plays();
     game_rate_source_is_placed_and_drains_after_it_ends();
-    sixteen_voices_then_no_more();
+    every_voice_then_no_more();
     zero_direction_is_played_ahead();
     test_tone_cycles_left_right_ahead_behind();
+    listener_frame_matches_the_game();
+    closest_point_is_clamped_to_the_segment();
+    channel_hands_over_the_newest_snapshot();
     std::puts("[test][spatial-audio] PASS");
     return 0;
 }
