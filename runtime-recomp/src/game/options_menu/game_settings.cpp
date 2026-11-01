@@ -7,6 +7,7 @@
 #include "accessibility/localization.hpp"
 #include "display_bridge.hpp"
 #include "game_audio_memory.hpp"
+#include "race_cues/cue_settings.hpp"
 #include "runtime_enhancements.hpp"
 #include "runtime_platform.hpp"
 #include "runtime_ui.hpp"
@@ -23,6 +24,7 @@ namespace {
 namespace text = accessibility::text;
 using text::Phrase;
 namespace enh = runtime::enhancements;
+namespace cues = race_cues;
 
 // Menu text table entries (AssetMenuTextIdsEnum in the decomp's generated
 // include/asset_enums.h; identical in US 1.0 and Rev A).
@@ -101,6 +103,47 @@ int wrap(int index, int step, int count) {
     return ((index + step) % count + count) % count;
 }
 
+// One step within a range, stopping at its ends; false when already there.
+bool step_within(int& value, int step, int minimum, int maximum) {
+    const int next = std::clamp(value + step, minimum, maximum);
+    if (next == value) return false;
+    value = next;
+    return true;
+}
+
+// One left/right step of an AUDIO CUES setting; false when nothing changed.
+bool step_cue(cues::CueSettings& cue, ItemId id, int step) {
+    switch (id) {
+        case ItemId::TrackEdgeSound:
+            cue.edge_enabled = !cue.edge_enabled;
+            return true;
+        case ItemId::TrackEdgeVolume:
+            return step_within(cue.edge_volume, step * cues::kVolumeStep, 0, 100);
+        case ItemId::TrackEdgeDistance:
+            return step_within(cue.edge_distance, step, cues::kDistanceMin, cues::kDistanceMax);
+        case ItemId::TurnSignal:
+            cue.turn_enabled = !cue.turn_enabled;
+            return true;
+        case ItemId::TurnSignalVolume:
+            return step_within(cue.turn_volume, step * cues::kVolumeStep, 0, 100);
+        case ItemId::TurnSignalDirection:
+            cue.turn_direction = cue.turn_direction == cues::TurnDirection::ToTheSide
+                                     ? cues::TurnDirection::FromTheTurn
+                                     : cues::TurnDirection::ToTheSide;
+            return true;
+        case ItemId::TurnWarningTime:
+            return step_within(cue.turn_warning_tenths, step * cues::kWarningStepTenths, cues::kWarningMinTenths,
+                               cues::kWarningMaxTenths);
+        case ItemId::BeaconSound:
+            cue.beacon_enabled = !cue.beacon_enabled;
+            return true;
+        case ItemId::BeaconVolume:
+            return step_within(cue.beacon_volume, step * cues::kVolumeStep, 0, 100);
+        default:
+            return false;
+    }
+}
+
 } // namespace
 
 GameSettings::GameSettings(std::uint8_t* rdram, GuestCalls& calls, const GameCalls& game,
@@ -129,6 +172,8 @@ std::string GameSettings::heading(PageId page) const {
         case PageId::Root: return game_text(rdram_, kOptions);
         case PageId::General: return text::phrase(Phrase::GeneralOptions);
         case PageId::Audio: return game_text(rdram_, kAudioOptions);
+        case PageId::AccessibilityOptions: return text::phrase(Phrase::AccessibilityOptions);
+        case PageId::AudioCues: return text::phrase(Phrase::AudioCues);
         default: return text::display_heading(page);
     }
 }
@@ -140,6 +185,7 @@ std::string GameSettings::label(ItemId id) const {
         case ItemId::AudioOptions: return game_text(rdram_, kAudioOptions);
         case ItemId::SaveOptions: return game_text(rdram_, kSaveOptions);
         case ItemId::MagicCodes: return game_text(rdram_, kMagicCodes);
+        case ItemId::AccessibilityOptions: return text::phrase(Phrase::AccessibilityOptions);
         case ItemId::Return: return game_text(rdram_, kReturn);
         case ItemId::MasterVolume: return text::phrase(Phrase::MasterVolume);
         case ItemId::MusicVolume: return game_text(rdram_, kMusicVolume);
@@ -152,6 +198,16 @@ std::string GameSettings::label(ItemId id) const {
         case ItemId::EqualiserBass: return text::phrase(Phrase::Bass);
         case ItemId::EqualiserMid: return text::phrase(Phrase::Mid);
         case ItemId::EqualiserTreble: return text::phrase(Phrase::Treble);
+        case ItemId::AudioCues: return text::phrase(Phrase::AudioCues);
+        case ItemId::TrackEdgeSound: return text::phrase(Phrase::TrackEdgeSound);
+        case ItemId::TrackEdgeVolume: return text::phrase(Phrase::TrackEdgeVolume);
+        case ItemId::TrackEdgeDistance: return text::phrase(Phrase::TrackEdgeDistance);
+        case ItemId::TurnSignal: return text::phrase(Phrase::TurnSignal);
+        case ItemId::TurnSignalVolume: return text::phrase(Phrase::TurnSignalVolume);
+        case ItemId::TurnSignalDirection: return text::phrase(Phrase::TurnSignalDirection);
+        case ItemId::TurnWarningTime: return text::phrase(Phrase::TurnWarningTime);
+        case ItemId::BeaconSound: return text::phrase(Phrase::BeaconSound);
+        case ItemId::BeaconVolume: return text::phrase(Phrase::BeaconVolume);
         // The game shows these by their value alone.
         case ItemId::Language:
         case ItemId::Subtitles:
@@ -197,6 +253,25 @@ std::string GameSettings::value(ItemId id) const {
             const std::vector<std::string> labels = runtime::ui::sound_preset_labels();
             return preset && *preset < labels.size() ? upper(labels[*preset]) : text::phrase(Phrase::Custom);
         }
+        case ItemId::TrackEdgeSound:
+            return text::phrase(cues::settings().edge_enabled ? Phrase::On : Phrase::Off);
+        case ItemId::TrackEdgeVolume:
+            return text::percent(cues::settings().edge_volume);
+        case ItemId::TrackEdgeDistance:
+            return std::to_string(cues::settings().edge_distance);
+        case ItemId::TurnSignal:
+            return text::phrase(cues::settings().turn_enabled ? Phrase::On : Phrase::Off);
+        case ItemId::TurnSignalVolume:
+            return text::percent(cues::settings().turn_volume);
+        case ItemId::TurnSignalDirection:
+            return text::phrase(cues::settings().turn_direction == cues::TurnDirection::ToTheSide ? Phrase::ToTheSide
+                                                                                                 : Phrase::FromTheTurn);
+        case ItemId::TurnWarningTime:
+            return text::seconds_tenths(cues::settings().turn_warning_tenths);
+        case ItemId::BeaconSound:
+            return text::phrase(cues::settings().beacon_enabled ? Phrase::On : Phrase::Off);
+        case ItemId::BeaconVolume:
+            return text::percent(cues::settings().beacon_volume);
         default:
             return {};
     }
@@ -281,6 +356,20 @@ bool GameSettings::adjust(ItemId id, int step) {
             if (next == index) return false;
             runtime::ui::apply_sound_preset(next < presets ? std::optional<std::size_t>(static_cast<std::size_t>(next))
                                                            : std::nullopt);
+            return true;
+        }
+        case ItemId::TrackEdgeSound:
+        case ItemId::TrackEdgeVolume:
+        case ItemId::TrackEdgeDistance:
+        case ItemId::TurnSignal:
+        case ItemId::TurnSignalVolume:
+        case ItemId::TurnSignalDirection:
+        case ItemId::TurnWarningTime:
+        case ItemId::BeaconSound:
+        case ItemId::BeaconVolume: {
+            cues::CueSettings cue = cues::settings();
+            if (!step_cue(cue, id, step)) return false;
+            cues::set_settings(cue);
             return true;
         }
         default:

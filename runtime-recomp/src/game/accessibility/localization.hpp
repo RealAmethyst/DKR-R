@@ -35,6 +35,33 @@ enum class Phrase {
     Mid,
     Treble,
     Ready,
+    AccessibilityOptions,
+    AudioCues,
+    TrackEdgeSound,
+    TrackEdgeVolume,
+    TrackEdgeDistance,
+    TurnSignal,
+    TurnSignalVolume,
+    TurnSignalDirection,
+    ToTheSide,
+    FromTheTurn,
+    TurnWarningTime,
+    BeaconSound,
+    BeaconVolume,
+    // Hub beacon destinations without a name in the game's text.
+    Taj,
+    Balloon,
+    TimbersIsland,
+    GuidanceOff,
+    // Directions from the kart's heading.
+    Ahead,
+    AheadRight,
+    Right,
+    BehindRight,
+    Behind,
+    BehindLeft,
+    Left,
+    AheadLeft,
 };
 std::string phrase(Phrase phrase);
 
@@ -58,5 +85,15 @@ std::string balloons(int count);
 std::string percent(int value);
 // An equaliser band level: "+3 dB", "0 dB", "-2 dB".
 std::string decibels(int value);
+// A time in tenths of a second: "2 SECONDS", "1.5 SECONDS", "1 SECOND".
+std::string seconds_tenths(int tenths);
+
+// Hub beacon announcements about a destination: "GUIDING, DINO DOMAIN",
+// "ARRIVED, TAJ", "NO ROUTE, BALLOON", and its direction from the kart:
+// "DINO DOMAIN, AHEAD LEFT".
+std::string guiding(std::string_view destination);
+std::string arrived(std::string_view destination);
+std::string no_route(std::string_view destination);
+std::string direction(std::string_view destination, Phrase bearing);
 
 } // namespace dkr::accessibility::text

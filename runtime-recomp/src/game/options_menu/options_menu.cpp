@@ -14,6 +14,7 @@ constexpr std::array kRootItems{
     ItemDef{ItemId::AudioOptions, ItemKind::Page, PageId::Audio},
     ItemDef{ItemId::SaveOptions, ItemKind::Screen},
     ItemDef{ItemId::MagicCodes, ItemKind::Screen},
+    ItemDef{ItemId::AccessibilityOptions, ItemKind::Page, PageId::AccessibilityOptions},
     ItemDef{ItemId::Return, ItemKind::Return},
 };
 
@@ -141,6 +142,22 @@ constexpr std::array kAudioItems{
     ItemDef{ItemId::EqualiserTreble, ItemKind::Setting},
 };
 
+constexpr std::array kAccessibilityItems{
+    ItemDef{ItemId::AudioCues, ItemKind::Page, PageId::AudioCues},
+};
+
+constexpr std::array kAudioCuesItems{
+    ItemDef{ItemId::TrackEdgeSound, ItemKind::Setting},
+    ItemDef{ItemId::TrackEdgeVolume, ItemKind::Setting},
+    ItemDef{ItemId::TrackEdgeDistance, ItemKind::Setting},
+    ItemDef{ItemId::TurnSignal, ItemKind::Setting},
+    ItemDef{ItemId::TurnSignalVolume, ItemKind::Setting},
+    ItemDef{ItemId::TurnSignalDirection, ItemKind::Setting},
+    ItemDef{ItemId::TurnWarningTime, ItemKind::Setting},
+    ItemDef{ItemId::BeaconSound, ItemKind::Setting},
+    ItemDef{ItemId::BeaconVolume, ItemKind::Setting},
+};
+
 constexpr std::array kPages{
     PageDef{PageId::Root, kRootItems},
     PageDef{PageId::General, kGeneralItems},
@@ -152,6 +169,8 @@ constexpr std::array kPages{
     PageDef{PageId::AdvancedWater, kAdvancedWaterItems},
     PageDef{PageId::PerformanceOverlay, kPerformanceOverlayItems},
     PageDef{PageId::Audio, kAudioItems},
+    PageDef{PageId::AccessibilityOptions, kAccessibilityItems},
+    PageDef{PageId::AudioCues, kAudioCuesItems},
 };
 
 std::span<const ItemDef> page_items(PageId page) {

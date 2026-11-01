@@ -1,5 +1,7 @@
 #include "options_menu/options_menu.hpp"
 
+#include "accessibility/localization.hpp"
+
 #include <algorithm>
 #include <cassert>
 #include <cstdio>
@@ -10,6 +12,7 @@
 
 using namespace dkr::options_menu;
 using dkr::accessibility::Utterance;
+namespace text = dkr::accessibility::text;
 
 namespace {
 
@@ -18,6 +21,8 @@ public:
     bool modern = false;
     int music = 80;
     bool subtitles = false;
+    bool edge = true;
+    int warning = 20;
 
     bool visible(ItemId id) const override {
         switch (id) {
@@ -39,6 +44,8 @@ public:
             case PageId::General: return "GENERAL OPTIONS";
             case PageId::Display: return "DISPLAY OPTIONS";
             case PageId::Audio: return "AUDIO OPTIONS";
+            case PageId::AccessibilityOptions: return "ACCESSIBILITY OPTIONS";
+            case PageId::AudioCues: return "AUDIO CUES";
             default: return {};
         }
     }
@@ -50,6 +57,12 @@ public:
             {ItemId::Return, "RETURN"}, {ItemId::Presentation, "PRESENTATION"},
             {ItemId::MasterVolume, "MASTER VOLUME"}, {ItemId::MusicVolume, "MUSIC VOLUME"},
             {ItemId::SfxVolume, "SFX VOLUME"}, {ItemId::OutputDevice, "OUTPUT DEVICE"},
+            {ItemId::AccessibilityOptions, "ACCESSIBILITY OPTIONS"}, {ItemId::AudioCues, "AUDIO CUES"},
+            {ItemId::TrackEdgeSound, "TRACK EDGE SOUND"}, {ItemId::TrackEdgeVolume, "TRACK EDGE VOLUME"},
+            {ItemId::TrackEdgeDistance, "TRACK EDGE DISTANCE"},
+            {ItemId::TurnSignal, "TURN SIGNAL"}, {ItemId::TurnSignalVolume, "TURN SIGNAL VOLUME"},
+            {ItemId::TurnSignalDirection, "TURN SIGNAL DIRECTION"}, {ItemId::TurnWarningTime, "TURN WARNING TIME"},
+            {ItemId::BeaconSound, "BEACON SOUND"}, {ItemId::BeaconVolume, "BEACON VOLUME"},
         };
         const auto found = labels.find(id);
         return found == labels.end() ? std::string{} : found->second;
@@ -60,12 +73,21 @@ public:
             case ItemId::Subtitles: return subtitles ? "SUBTITLES ON" : "SUBTITLES OFF";
             case ItemId::Presentation: return modern ? "MODERN" : "ACCURATE";
             case ItemId::MusicVolume: return std::to_string(music) + "%";
+            case ItemId::TrackEdgeSound: return text::phrase(edge ? text::Phrase::On : text::Phrase::Off);
+            case ItemId::TurnWarningTime: return text::seconds_tenths(warning);
             default: return {};
         }
     }
     bool adjust(ItemId id, int step) override {
         if (id == ItemId::Subtitles) { subtitles = !subtitles; return true; }
         if (id == ItemId::Presentation) { modern = !modern; return true; }
+        if (id == ItemId::TrackEdgeSound) { edge = !edge; return true; }
+        if (id == ItemId::TurnWarningTime) {
+            const int next = std::clamp(warning + step * 5, 10, 40);
+            if (next == warning) return false;
+            warning = next;
+            return true;
+        }
         if (id == ItemId::MusicVolume) {
             const int next = std::clamp(music + step * 5, 0, 100);
             if (next == music) return false;
@@ -88,8 +110,8 @@ void opens_on_the_root_page_with_its_heading() {
     FakeSettings settings;
     Controller menu;
     const Result result = menu.open(settings);
-    assert((result.speech == Speech{{"OPTIONS", true}, {"GENERAL OPTIONS, 1 of 6", false}}));
-    assert(menu.rows(settings).size() == 6U && menu.rows(settings)[0].selected);
+    assert((result.speech == Speech{{"OPTIONS", true}, {"GENERAL OPTIONS, 1 of 7", false}}));
+    assert(menu.rows(settings).size() == 7U && menu.rows(settings)[0].selected);
 }
 
 void moves_clamp_and_speak_with_positions() {
@@ -100,7 +122,7 @@ void moves_clamp_and_speak_with_positions() {
     assert(up.sound == Sound::None && up.speech.empty());
     Result down = menu.handle(Input::Down, settings);
     assert(down.sound == Sound::Move);
-    assert((down.speech == Speech{{"DISPLAY OPTIONS, 2 of 6", true}}));
+    assert((down.speech == Speech{{"DISPLAY OPTIONS, 2 of 7", true}}));
 }
 
 void pages_open_and_return_without_repeating_the_heading() {
@@ -116,7 +138,7 @@ void pages_open_and_return_without_repeating_the_heading() {
     assert((toggle.speech == Speech{{"SUBTITLES ON, 2 of 2", true}}));
     Result back = menu.handle(Input::Back, settings);
     assert(back.sound == Sound::Back && menu.page() == PageId::Root && !back.leave);
-    assert((back.speech == Speech{{"GENERAL OPTIONS, 1 of 6", true}}));
+    assert((back.speech == Speech{{"GENERAL OPTIONS, 1 of 7", true}}));
 }
 
 void modern_only_rows_follow_the_presentation() {
@@ -150,12 +172,12 @@ void game_screens_and_return_leave_the_menu() {
     assert(save.leave == ItemId::SaveOptions && save.sound == Sound::Select && save.speech.empty());
     // Back from the game's Save Options: resume on it, without the heading.
     Result resumed = menu.open(settings);
-    assert((resumed.speech == Speech{{"SAVE OPTIONS, 4 of 6", true}}));
+    assert((resumed.speech == Speech{{"SAVE OPTIONS, 4 of 7", true}}));
     // Arriving again from the title starts over with the heading.
     Result back = menu.handle(Input::Back, settings);
     assert(back.leave == ItemId::Return && back.sound == Sound::Back);
     assert(menu.open(settings).speech.size() == 2U);
-    for (int i = 0; i < 5; ++i) menu.handle(Input::Down, settings);
+    for (int i = 0; i < 6; ++i) menu.handle(Input::Down, settings);
     Result leave = menu.handle(Input::Accept, settings);
     assert(leave.leave == ItemId::Return && leave.sound == Sound::Back);
 }
@@ -177,6 +199,47 @@ void a_applies_actions_and_is_ignored_elsewhere() {
     assert((applied.speech == Speech{{"BALANCED APPLIED", true}}));
 }
 
+void accessibility_options_hold_the_audio_cues() {
+    FakeSettings settings;
+    Controller menu;
+    menu.open(settings);
+    for (int i = 0; i < 5; ++i) menu.handle(Input::Down, settings);
+    assert(menu.rows(settings)[5].text == "ACCESSIBILITY OPTIONS" && menu.rows(settings)[5].selected);
+    Result accessibility = menu.handle(Input::Accept, settings);
+    assert(menu.page() == PageId::AccessibilityOptions && accessibility.sound == Sound::Select);
+    assert((accessibility.speech == Speech{{"ACCESSIBILITY OPTIONS", true}, {"AUDIO CUES, 1 of 1", false}}));
+    Result cues = menu.handle(Input::Accept, settings);
+    assert(menu.page() == PageId::AudioCues && menu.rows(settings).size() == 9U);
+    assert((cues.speech == Speech{{"AUDIO CUES", true}, {"TRACK EDGE SOUND, ON, 1 of 9", false}}));
+    Result off = menu.handle(Input::Left, settings);
+    assert(off.changed && !settings.edge);
+    assert((off.speech == Speech{{"TRACK EDGE SOUND, OFF, 1 of 9", true}}));
+    for (int i = 0; i < 6; ++i) menu.handle(Input::Down, settings);
+    Result longer = menu.handle(Input::Right, settings);
+    assert(longer.changed && settings.warning == 25);
+    assert((longer.speech == Speech{{"TURN WARNING TIME, 2.5 SECONDS, 7 of 9", true}}));
+    // The warning time stops at its ends instead of wrapping.
+    settings.warning = 40;
+    Result limit = menu.handle(Input::Right, settings);
+    assert(!limit.changed && limit.speech.empty() && settings.warning == 40);
+    // The hub beacon's rows follow the turn signal's.
+    Result beacon = menu.handle(Input::Down, settings);
+    assert((beacon.speech == Speech{{"BEACON SOUND, 8 of 9", true}}));
+    Result volume = menu.handle(Input::Down, settings);
+    assert((volume.speech == Speech{{"BEACON VOLUME, 9 of 9", true}}));
+    // The list ends there.
+    assert(menu.handle(Input::Down, settings).speech.empty());
+    menu.handle(Input::Up, settings);
+    menu.handle(Input::Up, settings);
+    // Back goes up one page at a time, each resuming on the item that opened it.
+    Result up = menu.handle(Input::Back, settings);
+    assert(menu.page() == PageId::AccessibilityOptions && !up.leave);
+    assert((up.speech == Speech{{"AUDIO CUES, 1 of 1", true}}));
+    Result root = menu.handle(Input::Back, settings);
+    assert(menu.page() == PageId::Root && !root.leave);
+    assert((root.speech == Speech{{"ACCESSIBILITY OPTIONS, 6 of 7", true}}));
+}
+
 void item_text_omits_absent_parts() {
     assert(item_text("MUSIC VOLUME", "80%") == "MUSIC VOLUME, 80%");
     assert(item_text("", "ENGLISH") == "ENGLISH");
@@ -193,6 +256,7 @@ int main() {
     modern_only_rows_follow_the_presentation();
     game_screens_and_return_leave_the_menu();
     a_applies_actions_and_is_ignored_elsewhere();
+    accessibility_options_hold_the_audio_cues();
     item_text_omits_absent_parts();
     std::puts("[test][options-menu] PASS");
     return 0;

@@ -246,6 +246,10 @@ $controllerDirectory = Join-Path $stage 'assets\controllers'
 New-Item -ItemType Directory -Path $controllerDirectory -Force | Out-Null
 Copy-Item -LiteralPath (Join-Path $projectRoot 'assets\controllers\gamecontrollerdb.txt') `
     -Destination (Join-Path $controllerDirectory 'gamecontrollerdb.txt')
+$soundDirectory = Join-Path $stage 'assets\sounds'
+New-Item -ItemType Directory -Path $soundDirectory -Force | Out-Null
+Copy-Item -Path (Join-Path $projectRoot 'assets\sounds\*.wav') `
+    -Destination $soundDirectory -Force
 Copy-Item -LiteralPath (Join-Path $projectRoot 'packaging\RELEASE-README.md') -Destination (Join-Path $stage 'README.md')
 Copy-Item -LiteralPath (Join-Path $projectRoot 'docs\ONLINE_MULTIPLAYER.md') -Destination (Join-Path $stage 'ONLINE_MULTIPLAYER.md')
 Copy-Item -LiteralPath (Join-Path $projectRoot 'docs\UPDATES.md') -Destination (Join-Path $stage 'UPDATES.md')

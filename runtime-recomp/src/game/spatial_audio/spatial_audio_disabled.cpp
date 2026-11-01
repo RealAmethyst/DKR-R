@@ -6,6 +6,8 @@ namespace dkr::runtime::spatial_audio {
 void start(std::uint32_t) {}
 void stop() {}
 bool active() { return false; }
+bool binaural_available() { return false; }
+void begin_output_block(const void*) {}
 void mix_into(float*, std::size_t) {}
 
 } // namespace dkr::runtime::spatial_audio

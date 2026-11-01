@@ -1,5 +1,6 @@
 #include "spatial_audio/spatial_audio.hpp"
 
+#include "race_cues/cue_audio.hpp"
 #include "spatial_audio/binaural_renderer.hpp"
 #include "spatial_audio/snapshot.hpp"
 #include "spatial_audio/test_tone.hpp"
@@ -16,13 +17,33 @@
 namespace dkr::runtime::spatial_audio {
 namespace {
 
+// A race cue voice, rendered binaurally while the cues are in HEADPHONES.
+class CueSource final : public Source {
+public:
+    explicit CueSource(race_cues::Voice voice) : voice_(voice) {}
+    void set_rate(std::uint32_t rate) { rate_ = rate; }
+    bool render(float* mono, std::size_t frames, Direction& direction) override {
+        if (!race_cues::binaural()) return false;
+        race_cues::render_voice(voice_, mono, frames, rate_, direction);
+        return true;
+    }
+
+private:
+    race_cues::Voice voice_;
+    std::uint32_t rate_ = 0;
+};
+
 // Audio thread (platform mutex held). Twice the voices one frame captures,
 // so voices leaving (still draining their tails) never keep a new voice
-// from starting; the renderer has room for those and the test tone.
+// from starting; the renderer has room for those, the test tone and the
+// race cues.
 constexpr std::size_t kSources = alist::kMaxVoices * 2;
-static_assert(kSources < Renderer::kVoiceCount);
+static_assert(kSources + 1 + race_cues::kVoices <= Renderer::kVoiceCount);
 Renderer g_renderer;
 std::optional<TestTone> g_test_tone;
+std::array<CueSource, race_cues::kVoices> g_cue_sources{
+    CueSource{race_cues::Voice::EdgeLeft}, CueSource{race_cues::Voice::EdgeRight},
+    CueSource{race_cues::Voice::Turn}, CueSource{race_cues::Voice::Beacon}};
 std::array<CaptureSource, kSources> g_sources;
 FrameCapture g_current;
 
@@ -159,7 +180,18 @@ bool active() {
     return g_renderer.active();
 }
 
+bool binaural_available() {
+    return g_renderer.running();
+}
+
 void begin_output_block(const void* samples) {
+    if (g_renderer.running() && race_cues::binaural()) {
+        for (CueSource& source : g_cue_sources) {
+            if (g_renderer.playing(source)) continue;
+            source.set_rate(g_renderer.processing_rate());
+            g_renderer.play(source);
+        }
+    }
     const std::uint8_t* rdram = g_rdram.load(std::memory_order_acquire);
     if (rdram == nullptr || !g_renderer.running()) return;
     const auto* bytes = static_cast<const std::uint8_t*>(samples);
